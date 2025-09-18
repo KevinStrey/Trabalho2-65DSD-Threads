@@ -33,8 +33,7 @@ public class JanelaPrincipal extends JFrame {
 		pack();
 		setResizable(false);
 		setLocationRelativeTo(null);
-		
-		
+
 	}
 
 	public static void main(String[] args) {
@@ -44,10 +43,16 @@ public class JanelaPrincipal extends JFrame {
 			new JanelaPrincipal().setVisible(true);
 		});
 	}
-	
+
 	// Adicione este método dentro da classe JanelaPrincipal.java
 
 	public PainelMalha getPainelMalha() {
-	    return this.painelMalha;
+		return this.painelMalha;
+	}
+
+	// Adicione este método dentro da classe JanelaPrincipal.java
+
+	public PainelControle getPainelControle() {
+		return this.painelControle;
 	}
 }

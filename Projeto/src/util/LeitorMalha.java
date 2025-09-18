@@ -1,4 +1,3 @@
-// Salve como LeitorMalha.java
 package util;
 
 import java.awt.Point;
@@ -6,7 +5,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 import model.Malha;
 
 public class LeitorMalha {
@@ -15,61 +17,58 @@ public class LeitorMalha {
         try (BufferedReader reader = new BufferedReader(new FileReader(caminhoArquivo))) {
             int linhas = Integer.parseInt(reader.readLine().trim());
             int colunas = Integer.parseInt(reader.readLine().trim());
-
             int[][] grid = new int[linhas][colunas];
-            String linha;
-            int linhaAtual = 0;
 
-            while ((linha = reader.readLine()) != null && linhaAtual < linhas) {
-                String[] valores = linha.trim().split("\\s+");
-                for (int i = 0; i < colunas; i++) {
-                    grid[linhaAtual][i] = Integer.parseInt(valores[i]);
+            Map<Point, Semaphore> semaforos = new HashMap<>();
+            Map<Point, Object> monitores = new HashMap<>();
+
+            for (int i = 0; i < linhas; i++) {
+                String[] valores = reader.readLine().trim().split("\\s+");
+                for (int j = 0; j < colunas; j++) {
+                    int tipo = Integer.parseInt(valores[j]);
+                    grid[i][j] = tipo;
+                    // Se o segmento for um cruzamento (tipo 5 a 12)
+                    if (tipo >= 5 && tipo <= 12) {
+                        Point p = new Point(j, i);
+                        semaforos.put(p, new Semaphore(1, true)); // Semáforo binário e justo
+                        monitores.put(p, new Object()); // Objeto para servir de lock
+                    }
                 }
-                linhaAtual++;
             }
 
-            // --- LÓGICA NOVA PARA IDENTIFICAR ENTRADAS E SAÍDAS ---
             List<Point> entradas = new ArrayList<>();
             List<Point> saidas = new ArrayList<>();
             identificarPontos(grid, linhas, colunas, entradas, saidas);
             
-            return new Malha(linhas, colunas, grid, entradas, saidas);
+            return new Malha(grid, entradas, saidas, semaforos, monitores);
 
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
-            return new Malha(10, 10, new int[10][10], new ArrayList<>(), new ArrayList<>());
+            return new Malha(new int[10][10], new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
         }
     }
 
-    /**
-     * Percorre as bordas da malha para identificar os pontos de entrada e saída.
-     */
     private static void identificarPontos(int[][] grid, int linhas, int colunas, List<Point> entradas, List<Point> saidas) {
+        // ... (método sem alterações)
         for (int i = 0; i < linhas; i++) {
             for (int j = 0; j < colunas; j++) {
-                // Só nos interessam as células da borda
                 if (i == 0 || i == linhas - 1 || j == 0 || j == colunas - 1) {
                     int tipo = grid[i][j];
-                    
-                    // Borda Superior (i=0)
                     if (i == 0) {
-                        if (tipo == 3) entradas.add(new Point(j, i)); // Estrada para Baixo (Entra)
-                        if (tipo == 1) saidas.add(new Point(j, i));   // Estrada para Cima (Sai)
+                        if (tipo == 3) entradas.add(new Point(j, i));
+                        if (tipo == 1) saidas.add(new Point(j, i));
                     }
-                    // Borda Inferior (i=linhas-1)
                     if (i == linhas - 1) {
-                        if (tipo == 1) entradas.add(new Point(j, i)); // Estrada para Cima (Entra)
-                        if (tipo == 3) saidas.add(new Point(j, i));   // Estrada para Baixo (Sai)
+                        if (tipo == 1) entradas.add(new Point(j, i));
+                        if (tipo == 3) saidas.add(new Point(j, i));
                     }
-                    // Borda Esquerda (j=0)
                     if (j == 0) {
-                        if (tipo == 2) entradas.add(new Point(j, i)); // Estrada para Direita (Entra)
-                        if (tipo == 4) saidas.add(new Point(j, i));   // Estrada para Esquerda (Sai)
+                        if (tipo == 2) entradas.add(new Point(j, i));
+                        if (tipo == 4) saidas.add(new Point(j, i));
                     }
-                    // Borda Direita (j=colunas-1)
                     if (j == colunas - 1) {
-                        if (tipo == 4) entradas.add(new Point(j, i)); // Estrada para Esquerda (Entra)
-                        if (tipo == 2) saidas.add(new Point(j, i));   // Estrada para Direita (Sai)
+                        if (tipo == 4) entradas.add(new Point(j, i));
+                        if (tipo == 2) saidas.add(new Point(j, i));
                     }
                 }
             }
