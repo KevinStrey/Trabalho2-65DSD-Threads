@@ -3,6 +3,8 @@ package view;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -75,14 +77,32 @@ public class PainelMalha extends JPanel {
     }
     
     private void desenharVeiculos(Graphics2D g2d, int tamanhoCelula) {
-        // Usamos synchronized para evitar problemas de concorrência ao ler a lista
         synchronized (veiculos) {
-            g2d.setColor(Color.BLUE);
+            // Define uma fonte para o número do ID. O tamanho será proporcional ao da célula.
+            Font idFont = new Font("Arial", Font.BOLD, tamanhoCelula / 2);
+            g2d.setFont(idFont);
+            FontMetrics fm = g2d.getFontMetrics(); // Objeto que nos ajuda a centralizar o texto
+
             for (Veiculo v : veiculos) {
                 Point p = v.getPosicao();
-                g2d.fillRoundRect(p.x * tamanhoCelula + 2, p.y * tamanhoCelula + 2, 
-                                  tamanhoCelula - 4, tamanhoCelula - 4, 
+                int xBase = p.x * tamanhoCelula;
+                int yBase = p.y * tamanhoCelula;
+
+                // 1. Desenha o corpo azul do veículo
+                g2d.setColor(Color.BLUE);
+                g2d.fillRoundRect(xBase + 2, yBase + 2,
+                                  tamanhoCelula - 4, tamanhoCelula - 4,
                                   5, 5);
+
+                // 2. Desenha o número do ID em branco por cima
+                String idTexto = String.valueOf(v.getId());
+
+                // Calcula a posição exata para centralizar o texto dentro do quadrado do veículo
+                int xTexto = xBase + (tamanhoCelula - fm.stringWidth(idTexto)) / 2;
+                int yTexto = yBase + (tamanhoCelula - fm.getHeight()) / 2 + fm.getAscent();
+
+                g2d.setColor(Color.WHITE);
+                g2d.drawString(idTexto, xTexto, yTexto);
             }
         }
     }

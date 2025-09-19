@@ -125,6 +125,7 @@ public class SimuladorController implements Runnable {
 
         while (simulacaoAtiva) {
             try {
+                // Remove veículos que já terminaram sua execução da lista principal
                 veiculos.removeIf(v -> !v.isAlive());
 
                 if (podeInserirVeiculos && veiculos.size() < Integer.parseInt(painelControle.getQtdVeiculos())) {
@@ -134,7 +135,9 @@ public class SimuladorController implements Runnable {
                                                 ? EstrategiaType.SEMAFORO 
                                                 : EstrategiaType.MONITOR;
                     
-                    Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, estrategia);
+                    // ATENÇÃO: Linha modificada para passar a lista de veículos
+                    Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, estrategia, veiculos);
+                    
                     veiculos.add(novoVeiculo);
                     novoVeiculo.start();
                 }
@@ -145,7 +148,6 @@ public class SimuladorController implements Runnable {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                // Captura outras exceções para não quebrar a thread gerenciadora
                 System.err.println("Erro no loop do gerenciador: " + e.getMessage());
             }
         }
