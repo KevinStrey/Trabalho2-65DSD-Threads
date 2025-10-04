@@ -18,6 +18,8 @@ import javax.swing.border.TitledBorder;
 
 public class PainelControle extends JPanel {
 
+	
+	private static final long serialVersionUID = 1L;
 	private JTextField txtQtdVeiculos;
 	private JTextField txtIntervalo;
 	private JRadioButton rbSemaforo;
@@ -50,7 +52,7 @@ public class PainelControle extends JPanel {
 		// Campo de Texto para a Quantidade de Veículos
 		gbc.gridx = 1;
 		gbc.weightx = 1.0;
-		txtQtdVeiculos = new JTextField("10");
+		txtQtdVeiculos = new JTextField("30");
 		add(txtQtdVeiculos, gbc);
 
 		// Rótulo "Intervalo de Inserção (ms)"
@@ -62,7 +64,7 @@ public class PainelControle extends JPanel {
 		// Campo de Texto para o Intervalo
 		gbc.gridx = 1;
 		gbc.weightx = 1.0;
-		txtIntervalo = new JTextField("1000");
+		txtIntervalo = new JTextField("500");
 		add(txtIntervalo, gbc);
 
 		// Rótulo "Mecanismo de Exclusão"

@@ -62,7 +62,7 @@ public class SimuladorController implements Runnable {
     }
 
     private boolean carregarMalha() {
-        JFileChooser fileChooser = new JFileChooser("./Malhas");
+        JFileChooser fileChooser = new JFileChooser("C:\\Malhas");
         fileChooser.setDialogTitle("Selecione um arquivo de malha viária");
 
         if (fileChooser.showOpenDialog(janela) == JFileChooser.APPROVE_OPTION) {

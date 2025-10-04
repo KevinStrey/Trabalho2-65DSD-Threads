@@ -1,4 +1,3 @@
-// Salve como PainelMalha.java
 package view;
 
 import java.awt.Color;
@@ -15,7 +14,9 @@ import model.Veiculo;
 
 public class PainelMalha extends JPanel {
 
-    private Malha malha;
+	
+	private static final long serialVersionUID = 1L;
+	private Malha malha;
     private List<Veiculo> veiculos; // Lista de veículos para desenhar
 
     public PainelMalha() {
@@ -108,7 +109,6 @@ public class PainelMalha extends JPanel {
     }
     
     private Color getColorForSegmento(int tipoSegmento) {
-        // ... (método sem alterações)
         switch (tipoSegmento) {
             case 1: case 2: case 3: case 4: return new Color(180, 180, 180);
             case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12: return new Color(120, 120, 120);

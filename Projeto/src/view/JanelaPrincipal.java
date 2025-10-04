@@ -37,21 +37,18 @@ public class JanelaPrincipal extends JFrame {
 	}
 
 	public static void main(String[] args) {
-		// Garante que a interface gráfica seja criada na Thread de Despacho de Eventos
-		// (EDT)
+		// Garante que a interface gráfica seja criada na Thread de Despacho de Eventos (EDT)
 		SwingUtilities.invokeLater(() -> {
 			new JanelaPrincipal().setVisible(true);
 		});
 	}
 
 	// Adicione este método dentro da classe JanelaPrincipal.java
-
 	public PainelMalha getPainelMalha() {
 		return this.painelMalha;
 	}
 
 	// Adicione este método dentro da classe JanelaPrincipal.java
-
 	public PainelControle getPainelControle() {
 		return this.painelControle;
 	}
