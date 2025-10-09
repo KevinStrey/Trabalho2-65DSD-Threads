@@ -81,6 +81,18 @@ public class SimuladorController implements Runnable {
         painelControle.getBtnEncerrarSimulacao().addActionListener(e -> encerrarSimulacao());
     }
 
+//    private void iniciarSimulacao() {
+//        if (simulacaoAtiva) return;
+//
+//        System.out.println("Iniciando a simulação...");
+//        simulacaoAtiva = true;
+//        podeInserirVeiculos = true;
+//        painelControle.getBtnIniciar().setEnabled(false);
+//        
+//        threadGerenciadora = new Thread(this);
+//        threadGerenciadora.start();
+//    }
+    
     private void iniciarSimulacao() {
         if (simulacaoAtiva) return;
 
@@ -89,9 +101,37 @@ public class SimuladorController implements Runnable {
         podeInserirVeiculos = true;
         painelControle.getBtnIniciar().setEnabled(false);
         
+        // --- LÓGICA DE INSERÇÃO INICIAL ADICIONADA AQUI ---
+        
+        // 1. Pega a lista de todos os pontos de entrada da malha.
+        List<Point> pontosDeEntrada = malha.getPontosDeEntrada();
+        
+        // 2. Garante que não tentaremos criar mais carros do que o limite ou do que os pontos de entrada disponíveis.
+        int maxInitialCars = Math.min(pontosDeEntrada.size(), Integer.parseInt(painelControle.getQtdVeiculos()));
+        
+        System.out.println("Inserindo " + maxInitialCars + " veículo(s) iniciais, um por ponto de entrada...");
+
+        // 3. Itera sobre os pontos de entrada para criar um carro em cada um.
+        for (int i = 0; i < maxInitialCars; i++) {
+            Point pontoInicial = pontosDeEntrada.get(i);
+            
+            EstrategiaType estrategia = painelControle.isSemaforoSelecionado() 
+                                        ? EstrategiaType.SEMAFORO 
+                                        : EstrategiaType.MONITOR;
+            
+            Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, estrategia, veiculos);
+            
+            veiculos.add(novoVeiculo);
+            novoVeiculo.start();
+        }
+
+        // --- FIM DA LÓGICA DE INSERÇÃO INICIAL ---
+
+        // 4. Inicia a thread gerenciadora que irá APENAS REPOR os veículos que saírem.
         threadGerenciadora = new Thread(this);
         threadGerenciadora.start();
     }
+
 
     private void encerrarInsercao() {
         System.out.println("Encerrando a inserção de novos veículos...");

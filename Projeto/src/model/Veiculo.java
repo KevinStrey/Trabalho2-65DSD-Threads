@@ -12,7 +12,7 @@ import view.PainelMalha;
 
 public class Veiculo extends Thread {
 
-	private static int contadorId = 1;
+	private static int contadorId = 0;
 
 	private final int id;
 	private Point posicao;
@@ -28,7 +28,7 @@ public class Veiculo extends Thread {
 		this.posicao = posicaoInicial;
 		this.malha = malha;
 		this.painel = painel;
-		this.velocidade = new Random().nextInt(50, 51);
+		this.velocidade = new Random().nextInt(400, 450);
 		this.estrategia = estrategia;
 		this.veiculos = veiculos;
 		//System.out.println("Veículo #" + this.id + " criado com estratégia: " + this.estrategia);
@@ -180,38 +180,6 @@ public class Veiculo extends Thread {
 		List<Point> caminhoEscolhido = escolherCaminhoAleatorio(pontoEntradaCruzamento);
 		if (caminhoEscolhido.isEmpty())
 			return;
-		
-		
-	    // --- CÓDIGO DE DEBUG REFINADO USANDO A LISTA DO CAMINHO ---
-	    Point posAtual = this.posicao;
-	    Point posEsperaCima = new Point(3, 1);
-	    Point posEsperaBaixo = new Point(2, 4);
-
-	    // Define os caminhos exatos que queremos detectar para o cenário "seguir reto"
-	    List<Point> pathRetaDeCima = List.of(new Point(3, 3), new Point(3, 4));
-	    List<Point> pathRetaDeBaixo = List.of(new Point(2, 2), new Point(2, 1));
-
-	    boolean condicaoDePausa = false;
-
-	    // Verifica se o veículo está na posição de cima E escolheu o caminho reto para baixo
-	    if (posAtual.equals(posEsperaCima) && caminhoEscolhido.equals(pathRetaDeCima)) {
-	        condicaoDePausa = true;
-	    }
-
-	    // Verifica se o veículo está na posição de baixo E escolheu o caminho reto para cima
-	    if (posAtual.equals(posEsperaBaixo) && caminhoEscolhido.equals(pathRetaDeBaixo)) {
-	        condicaoDePausa = true;
-	    }
-	    
-	    if (condicaoDePausa) {
-	        System.out.println("--- DEBUG ATIVO: Veículo #" + id + " em " + posAtual 
-	                           + " vai seguir reto. Aguardando 1000ms para forçar encontro. ---");
-	        Thread.sleep(5000);
-	    }
-	    // --- FIM DO CÓDIGO DE DEBUG ---
-
-		
-		
 
 		if (estrategia == EstrategiaType.SEMAFORO) {
 			gerenciarComSemaforo(pontoEntradaCruzamento, caminhoEscolhido);
@@ -220,38 +188,34 @@ public class Veiculo extends Thread {
 		}
 	}
 
+	// Na classe Veiculo.java
+
 	private void gerenciarComSemaforo(Point pontoEntrada, List<Point> caminho) throws InterruptedException {
-		
-	    int tipoCruzamento = malha.getValor(pontoEntrada.y, pontoEntrada.x);
-
-		
-		while (!Thread.currentThread().isInterrupted()) {
-			// 1. Verifica se o caminho físico está livre de outros carros
-			if (isCaminhoLivre(caminho) && isPosicaoLivre(pontoEntrada)) {
-				// 2. Se estiver livre, tenta RESERVAR (adquirir lock) todas as células do
-				// caminho
-				if (tentarReservarCaminho(caminho, pontoEntrada)) {
-					// SUCESSO! O caminho está livre E reservado.
-					try {
-						// 3. Move-se para a entrada e atravessa o caminho
-						this.posicao = pontoEntrada;
-						painel.repaint();
-						Thread.sleep(velocidade);
-						moverPeloCaminho(caminho);
-					} finally {
-						// 4. Libera os locks após a travessia, garantidamente
-						liberarCaminho(caminho, pontoEntrada);
-					}
-					break; // Sai do loop de tentativas
-				}
-			}
-
-			// 5. Se o caminho não estava livre OU falhou em reservar, espera e tenta de
-			// novo
-			Thread.sleep(50);
-		}
-	}
-
+	    
+	    while (!Thread.currentThread().isInterrupted()) {
+	        // A ÚNICA CONDIÇÃO: Tenta reservar (adquirir lock) de todas as células do caminho.
+	        // A verificação 'isCaminhoLivre' foi completamente removida desta etapa crucial
+	        // para eliminar a condição de corrida.
+	        if (tentarReservarCaminho(caminho, pontoEntrada)) {
+	            // SUCESSO! O caminho está reservado e é nosso. Ninguém mais pode entrar.
+	            try {
+	                // 2. Agora podemos nos mover com total segurança.
+	                this.posicao = pontoEntrada;
+	                painel.repaint();
+	                Thread.sleep(velocidade);
+	                moverPeloCaminho(caminho);
+	            } finally {
+	                // 3. Libera os locks após a travessia, garantidamente.
+	                liberarCaminho(caminho, pontoEntrada);
+	            }
+	            break; // Sai do loop de tentativas, travessia concluída.
+	        }
+	        
+	        // 4. Se falhou em reservar, simplesmente espera e tenta o ciclo novamente.
+	        // A falha significa que outro veículo já possui os locks necessários.
+	        Thread.sleep(50);
+	    }
+	}	
 	/**
 	 * Libera os locks de todas as células de um caminho.
 	 */
@@ -353,17 +317,17 @@ public class Veiculo extends Thread {
 					new Point(x - 1, y + 1)));
 			break;
 
-		// ERRADO, MAS NÃO TEM 6 NA MALHA, IMPLEMENTAR DEPOIS CASO PRECISE.
+		//NÃO TEM 6 NA MALHA, IMPLEMENTAR DEPOIS CASO PRECISE.
 		case 6: // Cruzamento Direita (Assumindo entrada pela esquerda)
-			// Vira à direita (relativo) -> para baixo
-			caminhosPossiveis.add(List.of(new Point(x, y + 1)));
-			// Segue reto (relativo) -> para a direita
-			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 2, y)));
-			// Vira à esquerda (relativo) -> para cima
-			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2)));
-			// Faz o retorno (relativo) -> volta para a esquerda
-			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1),
-					new Point(x - 1, y - 1)));
+//			// Vira à direita (relativo) -> para baixo
+//			caminhosPossiveis.add(List.of(new Point(x, y + 1)));
+//			// Segue reto (relativo) -> para a direita
+//			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 2, y)));
+//			// Vira à esquerda (relativo) -> para cima
+//			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2)));
+//			// Faz o retorno (relativo) -> volta para a esquerda
+//			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1),
+//					new Point(x - 1, y - 1)));
 			break;
 
 		case 7: // Cruzamento Baixo (Assumindo entrada por cima)
@@ -391,7 +355,7 @@ public class Veiculo extends Thread {
 			// vira à direita
 			caminhosPossiveis.add(List.of(new Point(x + 1, y)));
 
-			// ir reto (entrada por baixo)
+			 //ir reto (entrada por baixo)
 			if (malha.getValor(x, y - 2) != 0) {
 				caminhosPossiveis.add(List.of(new Point(x, y - 1), new Point(x, y - 2)));
 			}
@@ -410,7 +374,9 @@ public class Veiculo extends Thread {
 			// Vira à direita (relativo) -> para cima
 			caminhosPossiveis.add(List.of(new Point(x, y - 1)));
 			// Segue reto
-			caminhosPossiveis.add(List.of(new Point(x-1, y), new Point(x-2, y)));			
+			if(malha.getValor(x, y-2) != 0) {
+				caminhosPossiveis.add(List.of(new Point(x-1, y), new Point(x-2, y)));							
+			}
 			// Vira à esquerda (relativo) -> para baixo
 			caminhosPossiveis.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x - 1, y + 2)));
 			// Faz o retorno (relativo) -> volta para a direita
@@ -421,14 +387,16 @@ public class Veiculo extends Thread {
 			// Vira à direita (relativo) -> para baixo
 			caminhosPossiveis.add(List.of(new Point(x, y + 1)));
 			// Segue reto
-			caminhosPossiveis.add(List.of(new Point(x+1, y), new Point(x+2, y)));			
+			if(malha.getValor(y, x+2) != 0) {
+				caminhosPossiveis.add(List.of(new Point(x+1, y), new Point(x+2, y)));							
+			}
 			// Vira à esquerda (relativo) -> para cima
 			if (malha.getValor(x + 1, y - 2) != 0) {
 				caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2)));
 			}
 
 			// Faz o retorno (relativo) -> volta para a esquerda
-//			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1), new Point(x - 1, y - 1)));
+			caminhosPossiveis.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1), new Point(x - 1, y - 1)));
 			break;
 
 		case 12: // Cruzamento Baixo e Esquerda (Assumindo entrada por CIMA)
@@ -436,8 +404,8 @@ public class Veiculo extends Thread {
 			caminhosPossiveis.add(List.of(new Point(x - 1, y)));
 			// Segue reto (relativo) -> para baixo
 			caminhosPossiveis.add(List.of(new Point(x, y + 1), new Point(x, y + 2)));
-
-			// Faz o retorno (relativo) -> volta para cima
+//
+//			// Faz o retorno (relativo) -> volta para cima
 			caminhosPossiveis.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 1, y),
 					new Point(x + 1, y - 1)));
 			break;
