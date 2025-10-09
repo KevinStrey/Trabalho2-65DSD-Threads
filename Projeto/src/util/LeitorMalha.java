@@ -8,8 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 import model.Malha;
+import java.util.concurrent.Semaphore;
+
 
 public class LeitorMalha {
 
@@ -19,7 +20,7 @@ public class LeitorMalha {
             int colunas = Integer.parseInt(reader.readLine().trim());
             int[][] grid = new int[linhas][colunas];
 
-            Map<Point, Semaphore> semaforos = new HashMap<>();
+            Map<Point, Cruzamento> cruzamentos = new HashMap<>();
             Map<Point, Object> monitores = new HashMap<>();
 
             for (int i = 0; i < linhas; i++) {
@@ -30,7 +31,6 @@ public class LeitorMalha {
                     // Se o segmento for um cruzamento (tipo 5 a 12)
                     if (tipo >= 5 && tipo <= 12) {
                         Point p = new Point(j, i);
-                        semaforos.put(p, new Semaphore(1, true)); // Semáforo binário e justo
                         monitores.put(p, new Object()); // Objeto para servir de lock
                     }
                 }
@@ -40,11 +40,11 @@ public class LeitorMalha {
             List<Point> saidas = new ArrayList<>();
             identificarPontos(grid, linhas, colunas, entradas, saidas);
             
-            return new Malha(grid, entradas, saidas, semaforos, monitores);
+            return new Malha(grid, entradas, saidas, monitores);
 
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
-            return new Malha(new int[10][10], new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
+            return new Malha(new int[10][10], new ArrayList<>(), new ArrayList<>(), new HashMap<>());
         }
     }
 

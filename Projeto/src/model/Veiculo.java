@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+
+import util.Cruzamento;
 import view.PainelMalha;
 
 public class Veiculo extends Thread {
@@ -27,7 +29,7 @@ public class Veiculo extends Thread {
         this.posicao = posicaoInicial;
         this.malha = malha;
         this.painel = painel;
-        this.velocidade = new Random().nextInt(50, 100);
+        this.velocidade = new Random().nextInt(600, 601);
         this.estrategia = estrategia;
         this.veiculos = veiculos;
         System.out.println("Veículo #" + this.id + " criado com estratégia: " + this.estrategia);
@@ -150,58 +152,65 @@ public class Veiculo extends Thread {
      * @param pontoEntradaCruzamento O ponto inicial do cruzamento.
      */
     private void atravessarCruzamento(Point pontoEntradaCruzamento) throws InterruptedException {
-        
-        // Espera a célula de entrada ficar livre. ANALISAR PRA VER CONDIÇÕES DE CORRIDA
-        while (!isPosicaoLivre(pontoEntradaCruzamento)) {
-            Thread.sleep(100);
-        }
-        
-        // Decidir o caminho e adquirir o lock
+        // 1. Decide o caminho antes de qualquer outra ação.
         List<Point> caminhoEscolhido = escolherCaminhoAleatorio(pontoEntradaCruzamento);
-        if (caminhoEscolhido.isEmpty()) return; // Não há para onde ir, sai do método. //provavelmente não vai acontecer, ver se dá de retirar ao final
-        
-//        // Atualiza a posição para a entrada do cruzamento.
-//        this.posicao = pontoEntradaCruzamento;
-//        painel.repaint(); // Redesenha o painel para mostrar o veículo na entrada.
-//        Thread.sleep(velocidade); // Aguarda um ciclo, tornando o movimento visível.
+        if (caminhoEscolhido.isEmpty()) return;
 
-        // --- ETAPA 3: Atravessar o restante do caminho usando exclusão mútua ---
+        // 2. Delega toda a lógica de concorrência e movimento para o método apropriado.
         if (estrategia == EstrategiaType.SEMAFORO) {
             gerenciarComSemaforo(pontoEntradaCruzamento, caminhoEscolhido);
         } else {
+            // A mesma lógica precisaria ser aplicada aqui para gerenciarComMonitor
             gerenciarComMonitor(pontoEntradaCruzamento, caminhoEscolhido);
         }
     }
 
-    private void gerenciarComSemaforo(Point cruzamento, List<Point> caminhoEscolhido) throws InterruptedException {
-        Semaphore semaforo = malha.getSemaforosCruzamentos().get(cruzamento);
-        if (semaforo == null) return;
+
+    private void gerenciarComSemaforo(Point pontoEntradaCruzamento, List<Point> caminhoEscolhido) throws InterruptedException {
+        // 1. Encontra o objeto Cruzamento que gerencia este ponto de entrada.
+        Cruzamento cruzamento = malha.getCruzamento(pontoEntradaCruzamento);
+        if (cruzamento == null) {
+            // Se não houver um objeto Cruzamento, trata como via normal para não travar.
+            System.err.println("AVISO: Veículo #" + id + " não encontrou um Cruzamento gerenciável em " + pontoEntradaCruzamento + ". Tratando como via normal.");
+            while (!isPosicaoLivre(pontoEntradaCruzamento)) {
+                Thread.sleep(100);
+            }
+            this.posicao = pontoEntradaCruzamento;
+            return;
+        }
 
         while (!Thread.currentThread().isInterrupted()) {
-            semaforo.acquire(); // 1. Tenta adquirir o lock
+            // 2. Tenta bloquear o acesso ao cruzamento (adquire o lock do "portão").
+            cruzamento.bloquear();
+            
             try {
-                // 2. Com o lock adquirido, verifica o caminho inteiro
+                // 3. Com o lock garantido, verifica se o caminho físico está livre.
                 if (isCaminhoLivre(caminhoEscolhido)) {
-                    // 3a. Se livre, atravessa o caminho e sai do loop
-                    // Atualiza a posição para a entrada do cruzamento.
-                    this.posicao = cruzamento;
-                    painel.repaint(); // Redesenha o painel para mostrar o veículo na entrada.
-                    Thread.sleep(velocidade); // Aguarda um ciclo, tornando o movimento visível.
-
+                    // CAMINHO LIVRE: O veículo vai atravessar.
+                    
+                    // 3a. Move o veículo para a entrada.
+                    this.posicao = pontoEntradaCruzamento;
+                    painel.repaint();
+                    Thread.sleep(velocidade);
+                    
+                    // 3b. Atravessa o caminho.
                     moverPeloCaminho(caminhoEscolhido);
+                    
+                    // 3c. Travessia concluída, pode sair do loop de tentativas.
                     break; 
                 }
             } finally {
-                // 4. Libera o lock, seja porque atravessou ou porque o caminho estava bloqueado
-                semaforo.release();
+                // 4. Libera o lock do "portão", seja após atravessar ou se o caminho estava bloqueado.
+                cruzamento.liberar();
             }
             
-            // 3b. Se o caminho não estava livre, espera um pouco antes de tentar novamente
-            Thread.sleep(50); // Evita busy-waiting agressivo
+            // 5. Se o caminho estava bloqueado, espera um pouco antes de tentar de novo.
+            Thread.sleep(50);
         }
     }
 
-    private void gerenciarComMonitor(Point cruzamento, List<Point> caminho) throws InterruptedException {
+
+	private void gerenciarComMonitor(Point cruzamento, List<Point> caminho) throws InterruptedException {
         Object monitor = malha.getMonitoresCruzamentos().get(cruzamento);
         if (monitor == null) return;
 
