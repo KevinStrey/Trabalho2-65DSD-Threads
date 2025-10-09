@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import model.Malha;
 import java.util.concurrent.Semaphore;
 
@@ -20,18 +21,21 @@ public class LeitorMalha {
             int colunas = Integer.parseInt(reader.readLine().trim());
             int[][] grid = new int[linhas][colunas];
 
-            Map<Point, Cruzamento> cruzamentos = new HashMap<>();
-            Map<Point, Object> monitores = new HashMap<>();
+            // --- LÓGICA ATUALIZADA ---
+            // Cria um mapa global de semáforos para CADA célula de cruzamento individual
+            Map<Point, Semaphore> semaforos = new HashMap<>();
+            Map<Point, Object> monitores = new HashMap<>(); 
 
             for (int i = 0; i < linhas; i++) {
                 String[] valores = reader.readLine().trim().split("\\s+");
                 for (int j = 0; j < colunas; j++) {
                     int tipo = Integer.parseInt(valores[j]);
                     grid[i][j] = tipo;
-                    // Se o segmento for um cruzamento (tipo 5 a 12)
+                    // Se for um cruzamento, cria um semáforo e um monitor para este ponto específico
                     if (tipo >= 5 && tipo <= 12) {
                         Point p = new Point(j, i);
-                        monitores.put(p, new Object()); // Objeto para servir de lock
+                        semaforos.put(p, new Semaphore(1, true)); 
+                        monitores.put(p, new Object());
                     }
                 }
             }
@@ -40,14 +44,15 @@ public class LeitorMalha {
             List<Point> saidas = new ArrayList<>();
             identificarPontos(grid, linhas, colunas, entradas, saidas);
             
-            return new Malha(grid, entradas, saidas, monitores);
+            // Passa o novo mapa de semáforos para o construtor da Malha
+            return new Malha(grid, entradas, saidas, monitores, semaforos);
 
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
-            return new Malha(new int[10][10], new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+            // Retornar null ou uma Malha vazia em caso de erro
+            return null; 
         }
     }
-
     private static void identificarPontos(int[][] grid, int linhas, int colunas, List<Point> entradas, List<Point> saidas) {
         // ... (método sem alterações)
         for (int i = 0; i < linhas; i++) {

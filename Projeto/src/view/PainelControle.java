@@ -52,7 +52,7 @@ public class PainelControle extends JPanel {
 		// Campo de Texto para a Quantidade de Veículos
 		gbc.gridx = 1;
 		gbc.weightx = 1.0;
-		txtQtdVeiculos = new JTextField("30");
+		txtQtdVeiculos = new JTextField("2");
 		add(txtQtdVeiculos, gbc);
 
 		// Rótulo "Intervalo de Inserção (ms)"
@@ -64,7 +64,7 @@ public class PainelControle extends JPanel {
 		// Campo de Texto para o Intervalo
 		gbc.gridx = 1;
 		gbc.weightx = 1.0;
-		txtIntervalo = new JTextField("500");
+		txtIntervalo = new JTextField("1");
 		add(txtIntervalo, gbc);
 
 		// Rótulo "Mecanismo de Exclusão"

@@ -1,4 +1,3 @@
-// Salve como EstrategiaType.java
 package model;
 
 /**

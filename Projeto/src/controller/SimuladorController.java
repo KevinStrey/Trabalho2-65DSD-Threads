@@ -1,8 +1,6 @@
-// Salve como SimuladorController.java
 package controller;
 
 import java.awt.Point;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

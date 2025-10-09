@@ -1,5 +1,4 @@
 package main;
-//Salve como Simulador.java
 import javax.swing.SwingUtilities;
 import controller.SimuladorController;
 
