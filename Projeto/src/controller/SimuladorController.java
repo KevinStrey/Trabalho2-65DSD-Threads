@@ -30,6 +30,9 @@ public class SimuladorController implements Runnable {
     private Thread threadGerenciadora;
     private volatile boolean simulacaoAtiva = false;
     private volatile boolean podeInserirVeiculos = true;
+    
+ // --- VARIÁVEL PARA INSERÇÃO SEQUENCIAL DE VEÍCULOS ---
+    private int proximoPontoDeEntradaIndex = 0;
 
     public SimuladorController() {
         // 1. Inicializa os componentes principais (ainda sem dados)
@@ -109,7 +112,7 @@ public class SimuladorController implements Runnable {
         // 2. Garante que não tentaremos criar mais carros do que o limite ou do que os pontos de entrada disponíveis.
         int maxInitialCars = Math.min(pontosDeEntrada.size(), Integer.parseInt(painelControle.getQtdVeiculos()));
         
-        System.out.println("Inserindo " + maxInitialCars + " veículo(s) iniciais, um por ponto de entrada...");
+        //System.out.println("Inserindo " + maxInitialCars + " veículo(s) iniciais, um por ponto de entrada...");
 
         // 3. Itera sobre os pontos de entrada para criar um carro em cada um.
         for (int i = 0; i < maxInitialCars; i++) {
@@ -155,25 +158,83 @@ public class SimuladorController implements Runnable {
         painelMalha.repaint();
         painelControle.getBtnIniciar().setEnabled(true);
     }
+//	MÉTODO QUE FAZ INSERÇÃO ALEATÓRIA
+//    @Override
+//    public void run() {
+//        Random random = new Random();
+//        List<Point> pontosDeEntrada = malha.getPontosDeEntrada();
+//
+//        while (simulacaoAtiva) {
+//            try {
+//                // Remove veículos que já terminaram sua execução da lista principal
+//                veiculos.removeIf(v -> !v.isAlive());
+//
+//                if (podeInserirVeiculos && veiculos.size() < Integer.parseInt(painelControle.getQtdVeiculos())) {
+//                    Point pontoInicial = pontosDeEntrada.get(random.nextInt(pontosDeEntrada.size()));
+//                    
+//                    EstrategiaType estrategia = painelControle.isSemaforoSelecionado() 
+//                                                ? EstrategiaType.SEMAFORO 
+//                                                : EstrategiaType.MONITOR;
+//                    
+//                    // ATENÇÃO: Linha modificada para passar a lista de veículos
+//                    Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, estrategia, veiculos);
+//                    
+//                    veiculos.add(novoVeiculo);
+//                    novoVeiculo.start();
+//                }
+//
+//                long intervalo = Long.parseLong(painelControle.getIntervalo());
+//                Thread.sleep(intervalo);
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//                break;
+//            } catch (Exception e) {
+//                System.err.println("Erro no loop do gerenciador: " + e.getMessage());
+//            }
+//        }
+//        System.out.println("Thread gerenciadora finalizada.");
+//    }
 
+    
+// MÉTODO QUE FAZ INSERÇÃO SEQUENCIAL    
     @Override
     public void run() {
-        Random random = new Random();
+        Random random = new Random(); // Mantido caso precise no futuro
         List<Point> pontosDeEntrada = malha.getPontosDeEntrada();
 
         while (simulacaoAtiva) {
             try {
-                // Remove veículos que já terminaram sua execução da lista principal
+                // Guarda o tamanho da lista ANTES da remoção
+                int tamanhoAntes = veiculos.size();
+
                 veiculos.removeIf(v -> !v.isAlive());
+                
+                // Se o tamanho da lista mudou (um ou mais veículos foram removidos),
+                // força a atualização da tela.
+                if (veiculos.size() < tamanhoAntes) {
+                    painelMalha.repaint();
+                }
 
                 if (podeInserirVeiculos && veiculos.size() < Integer.parseInt(painelControle.getQtdVeiculos())) {
-                    Point pontoInicial = pontosDeEntrada.get(random.nextInt(pontosDeEntrada.size()));
+                    
+                    // --- LÓGICA DE INSERÇÃO ALTERADA AQUI ---
+                    
+                    // LINHA ANTIGA (ALEATÓRIA) - REMOVIDA:
+                    // Point pontoInicial = pontosDeEntrada.get(random.nextInt(pontosDeEntrada.size()));
+                    
+                    // NOVA LÓGICA (SEQUENCIAL):
+                    // 1. Pega o próximo ponto de entrada da lista usando o índice.
+                    Point pontoInicial = pontosDeEntrada.get(proximoPontoDeEntradaIndex);
+                    
+                    // 2. Atualiza o índice para a próxima inserção, voltando a 0 se chegar ao fim da lista.
+                    proximoPontoDeEntradaIndex = (proximoPontoDeEntradaIndex + 1) % pontosDeEntrada.size();
+
+                    // --- FIM DA ALTERAÇÃO ---
                     
                     EstrategiaType estrategia = painelControle.isSemaforoSelecionado() 
                                                 ? EstrategiaType.SEMAFORO 
                                                 : EstrategiaType.MONITOR;
                     
-                    // ATENÇÃO: Linha modificada para passar a lista de veículos
                     Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, estrategia, veiculos);
                     
                     veiculos.add(novoVeiculo);

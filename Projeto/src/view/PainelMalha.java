@@ -83,7 +83,7 @@ public class PainelMalha extends JPanel {
 		synchronized (veiculos) {
 			// Define uma fonte para o número do ID. O tamanho será proporcional ao da
 			// célula.
-			Font idFont = new Font("Arial", Font.BOLD, tamanhoCelula / 2);
+			Font idFont = new Font("Arial", Font.BOLD, tamanhoCelula / 3);
 			g2d.setFont(idFont);
 			FontMetrics fm = g2d.getFontMetrics(); // Objeto que nos ajuda a centralizar o texto
 
