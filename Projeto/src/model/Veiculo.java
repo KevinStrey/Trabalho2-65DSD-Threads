@@ -28,7 +28,7 @@ public class Veiculo extends Thread {
 		this.posicao = posicaoInicial;
 		this.malha = malha;
 		this.painel = painel;
-		this.velocidade = new Random().nextInt(250, 251);
+		this.velocidade = new Random().nextInt(20, 21);
 		this.estrategia = estrategia;
 		this.veiculos = veiculos;
 
@@ -225,40 +225,31 @@ public class Veiculo extends Thread {
 
 		while (!Thread.currentThread().isInterrupted()) {
 			if (tentativas > LIMITE_TENTATIVAS) {
-				System.out.println("--- DEBUG: Veículo #" + id + " atingiu o limite de " + LIMITE_TENTATIVAS
-						+ " tentativas. Replanejando rota... ---");
-				caminhoAtual = escolherCaminhoAleatorio(pontoEntrada, this.posicao, false);
+				System.out.println("--- DEBUG: Veículo #" + id + " atingiu o limite. Replanejando rota... ---");
+				caminhoAtual = escolherCaminhoAleatorio(pontoEntrada, this.posicao, true);
 				if (caminhoAtual.isEmpty()) {
-					System.err.println("AVISO: Veículo #" + id + " não encontrou rotas alternativas e ficou preso.");
-					break;
+					break; 
 				}
 				tentativas = 0;
 			}
 
-			Point celulaDeSaida = caminhoAtual.get(caminhoAtual.size() - 1);
-
-			if (isPosicaoLivre(celulaDeSaida)) {
-				if (tentarReservarCaminho(caminhoAtual, pontoEntrada)) {
-					try {
-						// --- A SOLUÇÃO ESTÁ AQUI ---
-						// Antes de se mover para o cruzamento, o veículo DEVE liberar a célula
-						// de onde ele está vindo (a sua posição anterior).
-						Semaphore semaforoOrigem = malha.getSemaforosCruzamentos().get(posAnterior);
-						if (semaforoOrigem != null) {
-							semaforoOrigem.release();
-						}
-						// --- FIM DA SOLUÇÃO ---
-
-						// Agora, o movimento para o cruzamento pode continuar com segurança.
-						this.posicao = pontoEntrada;
-						painel.repaint();
-						Thread.sleep(velocidade);
-						moverPeloCaminho(caminhoAtual);
-					} finally {
-						liberarCaminho(caminhoAtual, pontoEntrada);
+			// A verificação 'isPosicaoLivre' FOI REMOVIDA DAQUI.
+			// A única condição para prosseguir é conseguir reservar os semáforos.
+			if (tentarReservarCaminho(caminhoAtual, pontoEntrada)) {
+				try {
+					Semaphore semaforoOrigem = malha.getSemaforosCruzamentos().get(posAnterior);
+					if (semaforoOrigem != null) {
+						semaforoOrigem.release();
 					}
-					break;
+
+					this.posicao = pontoEntrada;
+					painel.repaint();
+					Thread.sleep(velocidade);
+					moverPeloCaminho(caminhoAtual);
+				} finally {
+					liberarCaminho(caminhoAtual, pontoEntrada);
 				}
+				break; // Sai do loop, travessia concluída.
 			}
 
 			tentativas++;
@@ -333,235 +324,86 @@ public class Veiculo extends Thread {
 	 */
 	// Na classe Veiculo.java
 
+	// Em Veiculo.java
+
 	private List<Point> escolherCaminhoAleatorio(Point pontoEntrada, Point posAnterior, boolean apenasSimples) {
-		int x = pontoEntrada.x;
-		int y = pontoEntrada.y;
-		int tipoCruzamento = malha.getValor(y, x);
+	    int tipoCruzamento = malha.getValor(pontoEntrada.y, pontoEntrada.x);
+	    
+	    // 1. Determina as direções de saída permitidas pelo tipo de cruzamento.
+	    List<Integer> direcoesDeSaida = obterDirecoesDeSaida(tipoCruzamento);
+	    
+	    List<List<Point>> caminhosPossiveis = new ArrayList<>();
 
-		// Dentro do método escolherCaminhoAleatorio(Point pontoEntrada, Point
-		// posAnterior, boolean apenasSimples)
+	    // 2. Para cada direção de saída permitida, constrói e valida um caminho.
+	    for (int direcao : direcoesDeSaida) {
+	        // Constrói o caminho para a direção atual.
+	        List<Point> novoCaminho = construirCaminho(direcao, pontoEntrada.x, pontoEntrada.y);
+	        
+	        // Valida se o caminho é válido (não está vazio e termina em uma via).
+	        if (!novoCaminho.isEmpty()) {
+	            Point celulaFinal = novoCaminho.get(novoCaminho.size() - 1);
+	            // Verifica se a célula final está dentro dos limites e é uma via (> 0).
+	            if (celulaFinal.y >= 0 && celulaFinal.y < malha.getLinhas() &&
+	                celulaFinal.x >= 0 && celulaFinal.x < malha.getColunas() &&
+	                malha.getValor(celulaFinal.y, celulaFinal.x) > 0) {
+	                
+	                caminhosPossiveis.add(novoCaminho);
+	            }
+	        }
+	    }
 
-		// Estruturas para separar os caminhos
-		List<List<Point>> caminhosSimples = new ArrayList<>();
-		List<List<Point>> caminhosComplexos = new ArrayList<>();
+	    // 3. Se não houver caminhos válidos, retorna uma lista vazia.
+	    if (caminhosPossiveis.isEmpty()) {
+	        return Collections.emptyList();
+	    }
+	    
+	    // 4. Sorteia um dos caminhos válidos.
+	    return caminhosPossiveis.get(new Random().nextInt(caminhosPossiveis.size()));
+	}
 
-		switch (tipoCruzamento) {
-		case 5: // Cruzamento Cima (Entrada única por baixo)
-			if (malha.getValor(x, y + 1) > 0) {
-				caminhosSimples.add(List.of(new Point(x + 1, y))); // Vira à direita
-			}
-			// VERIFICAÇÃO ADICIONADA: Só oferece 'seguir reto' se o caminho for válido
-			if (malha.getValor(y - 2, x) > 0) {
-				caminhosSimples.add(List.of(new Point(x, y - 1), new Point(x, y - 2))); // Segue reto
-			}
-			caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 2, y - 1))); // Vira
-																													// à
-																													// esquerda
-			caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 1, y),
-					new Point(x - 1, y + 1))); // Faz o retorno
-			break;
+	/**
+	 * MÉTODO AUXILIAR (Baseado no EstradaCelula.java):
+	 * Retorna as direções de saída (1-4) com base no tipo de cruzamento.
+	 */
+	private List<Integer> obterDirecoesDeSaida(int tipoCruzamento) {
+	    List<Integer> direcoes = new ArrayList<>();
+	    // Adiciona direções possíveis baseado no valor de direção
+	    if (tipoCruzamento == 5 || tipoCruzamento == 9 || tipoCruzamento == 10) {
+	        direcoes.add(1); // Cima
+	    }
+	    if (tipoCruzamento == 6 || tipoCruzamento == 9 || tipoCruzamento == 11) {
+	        direcoes.add(2); // Direita
+	    }
+	    if (tipoCruzamento == 7 || tipoCruzamento == 11 || tipoCruzamento == 12) {
+	        direcoes.add(3); // Baixo
+	    }
+	    if (tipoCruzamento == 8 || tipoCruzamento == 10 || tipoCruzamento == 12) {
+	        direcoes.add(4); // Esquerda
+	    }
+	    // Para vias normas que levam a um cruzamento, a direção é a da própria via.
+	    if (tipoCruzamento >= 1 && tipoCruzamento <= 4) {
+	        direcoes.add(tipoCruzamento);
+	    }
+	    return direcoes;
+	}
 
-		case 6: // Cruzamento Direita (Entrada única pela esquerda)
-			caminhosSimples.add(List.of(new Point(x, y + 1))); // Vira à direita (relativo -> para baixo)
-			// VERIFICAÇÃO ADICIONADA
-			if (x + 2 < malha.getColunas() && malha.getValor(y, x + 2) > 0) {
-				caminhosSimples.add(List.of(new Point(x + 1, y), new Point(x + 2, y))); // Segue reto (para direita)
-			}
-			caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2))); // Vira
-																													// à
-																													// esquerda
-																													// (relativo
-																													// ->
-																													// para
-																													// cima)
-			caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1),
-					new Point(x - 1, y - 1))); // Faz o retorno (relativo -> volta para esquerda)
-			break;
-
-		case 7: // Cruzamento Baixo (Entrada única por cima)
-			if (malha.getValor(y,x-1 ) > 0)
-				caminhosSimples.add(List.of(new Point(x - 1, y))); // Vira à direita (relativo -> para esquerda)
-
-			if (y + 2 < malha.getLinhas() && malha.getValor(y + 2, x) > 0)
-				caminhosSimples.add(List.of(new Point(x, y + 1), new Point(x, y + 2))); // Segue reto (para baixo)
-
-			caminhosComplexos.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 2, y + 1))); // V
-			caminhosComplexos.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 1, y),
-					new Point(x + 1, y - 1))); // Faz o retorno (relativo -> volta para cima)
-			break;
-
-		case 8: // Cruzamento Esquerda (Entrada única pela direita)
-			
-			if (malha.getValor(y-1, x) > 0)
-				caminhosSimples.add(List.of(new Point(x, y - 1))); // Vira à direita (relativo -> para cima)
-			
-			if (malha.getValor(y, x - 2) > 0) 
-				caminhosSimples.add(List.of(new Point(x - 1, y), new Point(x - 2, y))); // Segue reto (para esquerda)
-			
-			caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x - 1, y + 2))); // Vira
-																													// baixo)
-			caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x, y + 1),
-					new Point(x + 1, y + 1))); // Faz o retorno (relativo -> volta para direita)
-			break;
-
-		case 9: // Cruzamento Cima e Direita
-			if (posAnterior.y > pontoEntrada.y) { // Veio de baixo
-				
-				caminhosSimples.add(List.of(new Point(x + 1, y))); // Vira à direita
-				
-				if (malha.getValor(y - 2, x) > 0) 
-					caminhosSimples.add(List.of(new Point(x, y - 1), new Point(x, y - 2))); // Segue reto (para cima)
-				
-				if(malha.getValor(y-1, x-2) > 0)
-					caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 2, y - 1))); // Vira
-																														// à
-																														// esquerda
-				caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 1, y),
-						new Point(x - 1, y + 1))); // Retorno
-				
-			} else if (posAnterior.x < pontoEntrada.x) { // Veio da esquerda
-				caminhosSimples.add(List.of(new Point(x, y + 1))); // Vira à direita (relativo -> para baixo)
-				// VERIFICAÇÃO ADICIONADA
-				if (x + 2 < malha.getColunas() && malha.getValor(y, x + 2) > 0) {
-					caminhosSimples.add(List.of(new Point(x + 1, y), new Point(x + 2, y))); // Segue reto (para direita)
-				}
-				caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2))); // Vira
-																														// à
-																														// esquerda
-																														// (relativo
-																														// ->
-																														// para
-																														// cima)
-				caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1),
-						new Point(x - 1, y - 1))); // Retorno
-			}
-			break;
-
-		case 10: // Cruzamento Cima e Esquerda
-			if (posAnterior.y > pontoEntrada.y) { // Veio de baixo
-				caminhosSimples.add(List.of(new Point(x + 1, y))); // Vira à direita
-				// VERIFICAÇÃO ADICIONADA
-				if (y - 2 >= 0 && malha.getValor(y - 2, x) > 0) {
-					caminhosSimples.add(List.of(new Point(x, y - 1), new Point(x, y - 2))); // Segue reto (para cima)
-				}
-				caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 2, y - 1))); // Vira
-																														// à
-																														// esquerda
-				caminhosComplexos.add(List.of(new Point(x, y - 1), new Point(x - 1, y - 1), new Point(x - 1, y),
-						new Point(x - 1, y + 1))); // Retorno
-			} else if (posAnterior.x > pontoEntrada.x) { // Veio da direita
-				caminhosSimples.add(List.of(new Point(x, y - 1))); // Vira à direita (relativo -> para cima)
-				// VERIFICAÇÃO ADICIONADA
-				if (malha.getValor(y, x - 2) > 0) {
-					caminhosSimples.add(List.of(new Point(x - 1, y), new Point(x - 2, y))); // Segue reto (para
-																							// esquerda)
-				}
-				caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x - 1, y + 2))); // Vira
-																														// à
-																														// esquerda
-																														// (relativo
-																														// ->
-																														// para
-																														// baixo)
-				caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x, y + 1),
-						new Point(x + 1, y + 1))); // Retorno
-			}
-			break;
-
-		case 11: // Cruzamento Direita e Baixo
-
-			if (posAnterior.x < pontoEntrada.x) { // Veio da esquerda
-				caminhosSimples.add(List.of(new Point(x, y + 1))); // Vira à direita (relativo -> para baixo)
-
-				if (malha.getValor(y, x + 2) != 0) {
-					caminhosSimples.add(List.of(new Point(x + 1, y), new Point(x + 2, y))); // Segue reto (para direita)
-				}
-
-//						caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x + 1, y - 2))); // Vira à esquerda (relativo -> para cima)
-//						
-//						caminhosComplexos.add(List.of(new Point(x + 1, y), new Point(x + 1, y - 1), new Point(x, y - 1), new Point(x - 1, y - 1))); // Retorno
-
-			} else if (posAnterior.y < pontoEntrada.y) { // Veio de cima
-				caminhosSimples.add(List.of(new Point(x - 1, y))); // Vira à direita (relativo -> para esquerda)
-				// VERIFICAÇÃO ADICIONADA
-				if (y + 2 < malha.getLinhas() && malha.getValor(y + 2, x) > 0) {
-					caminhosSimples.add(List.of(new Point(x, y + 1), new Point(x, y + 2))); // Segue reto (para baixo)
-				}
-				caminhosComplexos.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 2, y + 1))); // Vira
-																														// à
-																														// esquerda
-																														// (relativo
-																														// ->
-																														// para
-																														// direita)
-				caminhosComplexos.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 1, y),
-						new Point(x + 1, y - 1))); // Retorno
-			}
-			break;
-
-		case 12: // Cruzamento Baixo e Esquerda
-			if (posAnterior.y < pontoEntrada.y) { // Veio de cima
-//						caminhosSimples.add(List.of(new Point(x - 1, y))); // Vira à direita (relativo -> para esquerda)
-				// VERIFICAÇÃO ADICIONADA
-				if (malha.getValor(y + 2, x) > 0) {
-					caminhosSimples.add(List.of(new Point(x, y + 1), new Point(x, y + 2))); // Segue reto (para baixo)
-				}
-				if (malha.getValor(y + 1, x + 2) > 0) {
-					caminhosComplexos
-							.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 2, y + 1))); // Vira
-																													// à
-																													// esquerda
-																													// (relativo
-																													// ->
-																													// para
-																													// direita)
-				}
-//						caminhosComplexos.add(List.of(new Point(x, y + 1), new Point(x + 1, y + 1), new Point(x + 1, y), new Point(x + 1, y - 1))); // Retorno
-			} else if (posAnterior.x > pontoEntrada.x) { // Veio da direita
-				caminhosSimples.add(List.of(new Point(x, y - 1))); // Vira à direita (relativo -> para cima)
-				// VERIFICAÇÃO ADICIONADA
-				if (x - 2 >= 0 && malha.getValor(y, x - 2) > 0) {
-					caminhosSimples.add(List.of(new Point(x - 1, y), new Point(x - 2, y))); // Segue reto (para
-																							// esquerda)
-				}
-				caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x - 1, y + 2))); // Vira
-																														// à
-																														// esquerda
-																														// (relativo
-																														// ->
-																														// para
-																														// baixo)
-				caminhosComplexos.add(List.of(new Point(x - 1, y), new Point(x - 1, y + 1), new Point(x, y + 1),
-						new Point(x + 1, y + 1))); // Retorno
-			}
-			break;
-		}
-
-		// --- BLOCO DE CÓDIGO CORRIGIDO ---
-
-		// 1. A lista 'caminhosPossiveis' é criada vazia aqui, para ser preenchida.
-		List<List<Point>> caminhosPossiveis = new ArrayList<>();
-
-		// 2. Popula a lista de acordo com o parâmetro 'apenasSimples'.
-		if (apenasSimples) {
-			caminhosPossiveis.addAll(caminhosSimples);
-		} else {
-			caminhosPossiveis.addAll(caminhosSimples);
-			caminhosPossiveis.addAll(caminhosComplexos);
-		}
-
-		// 3. AGORA, verifica se, após as tentativas, a lista está vazia.
-		if (caminhosPossiveis.isEmpty()) {
-			// Como último recurso, se pedimos caminhos simples e não achamos, tenta os
-			// complexos.
-			if (apenasSimples && !caminhosComplexos.isEmpty()) {
-				caminhosPossiveis.addAll(caminhosComplexos);
-			} else {
-				return Collections.emptyList(); // Retorna vazio se realmente não houver opções.
-			}
-		}
-
-		// 4. Escolhe um dos caminhos aleatoriamente da lista agora preenchida.
-		return caminhosPossiveis.get(new Random().nextInt(caminhosPossiveis.size()));
+	/**
+	 * MÉTODO AUXILIAR (Baseado no EstradaCelula.java):
+	 * Constrói a lista de Points para uma determinada direção de saída.
+	 * Retorna um caminho de 2 passos para simular o movimento para fora do cruzamento.
+	 */
+	private List<Point> construirCaminho(int direcao, int x, int y) {
+	    switch (direcao) {
+	        case 1: // Cima
+	            return List.of(new Point(x, y - 1), new Point(x, y - 2));
+	        case 2: // Direita
+	            return List.of(new Point(x + 1, y), new Point(x + 2, y));
+	        case 3: // Baixo
+	            return List.of(new Point(x, y + 1), new Point(x, y + 2));
+	        case 4: // Esquerda
+	            return List.of(new Point(x - 1, y), new Point(x - 2, y));
+	        default:
+	            return Collections.emptyList();
+	    }
 	}
 }
