@@ -52,7 +52,7 @@ public class PainelControle extends JPanel {
 		// Campo de Texto para a Quantidade de Veículos
 		gbc.gridx = 1;
 		gbc.weightx = 1.0;
-		txtQtdVeiculos = new JTextField("60");
+		txtQtdVeiculos = new JTextField("1");
 		add(txtQtdVeiculos, gbc);
 
 		// Rótulo "Intervalo de Inserção (ms)"
