@@ -9,9 +9,6 @@ import javax.swing.SwingUtilities;
 
 public class JanelaPrincipal extends JFrame {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private PainelMalha painelMalha;
 	private PainelControle painelControle;
