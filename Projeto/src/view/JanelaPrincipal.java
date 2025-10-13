@@ -1,6 +1,7 @@
 package view;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -14,10 +15,11 @@ public class JanelaPrincipal extends JFrame {
 	private PainelControle painelControle;
 
 	public JanelaPrincipal() {
+		
 		// Configurações básicas da Janela (JFrame)
 		super("Simulador de Tráfego em Malha Viária");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLayout(new BorderLayout(10, 10)); // Layout principal com espaçamento de 10px
+		setLayout(new BorderLayout(10, 10));
 
 		// Instanciação dos painéis customizados
 		painelMalha = new PainelMalha();
@@ -30,11 +32,22 @@ public class JanelaPrincipal extends JFrame {
 		add(painelMalha, BorderLayout.CENTER);
 		add(painelControle, BorderLayout.EAST);
 
-		// Finalização
-		pack();
-		setResizable(false);
-		setLocationRelativeTo(null);
+		// 1. Permite que a janela seja redimensionada e maximizada
+		setResizable(true);
 
+		// 2. Define um tamanho inicial preferido para a janela (Ex: 1280x800)
+		setPreferredSize(new Dimension(1280, 800));
+
+		// 3. Organiza os componentes com base nos seus tamanhos preferidos
+		pack();
+
+		// 4. Define o tamanho mínimo da janela como o tamanho "empacotado".
+		// Isso impede que o usuário encolha a janela a um ponto inutilizável.
+		setMinimumSize(getSize());
+
+		// 5. Centraliza a janela na tela
+		setLocationRelativeTo(null);
+		
 	}
 
 	public static void main(String[] args) {
@@ -44,12 +57,10 @@ public class JanelaPrincipal extends JFrame {
 		});
 	}
 
-	// Adicione este método dentro da classe JanelaPrincipal.java
 	public PainelMalha getPainelMalha() {
 		return this.painelMalha;
 	}
 
-	// Adicione este método dentro da classe JanelaPrincipal.java
 	public PainelControle getPainelControle() {
 		return this.painelControle;
 	}

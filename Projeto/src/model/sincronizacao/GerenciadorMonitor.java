@@ -8,7 +8,6 @@ import java.util.Set;
 public class GerenciadorMonitor implements GerenciadorSincronizacao {
 
     private final Set<Point> posicoesOcupadas = new HashSet<>();
-    private final Object travaReservaDeCaminho = new Object();
 
     @Override
     public boolean tentarAdquirir(Point p) {
@@ -30,7 +29,7 @@ public class GerenciadorMonitor implements GerenciadorSincronizacao {
 
     @Override
     public boolean tentarAdquirirCaminho(List<Point> caminho) {
-        synchronized (travaReservaDeCaminho) {
+        synchronized (this) {
             for (Point p : caminho) {
                 if (posicoesOcupadas.contains(p)) {
                     return false;

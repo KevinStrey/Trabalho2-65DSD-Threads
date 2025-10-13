@@ -20,6 +20,7 @@ public class GerenciadorSemaforo implements GerenciadorSincronizacao {
         Semaphore s = semaforos.get(p);
         return s == null || s.tryAcquire();
     }
+    
 
     @Override
     public void liberar(Point p) {

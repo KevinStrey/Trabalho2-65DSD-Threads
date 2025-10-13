@@ -24,7 +24,7 @@ public class Veiculo extends Thread {
         this.posicao = posicaoInicial;
         this.malha = malha;
         this.painel = painel;
-        this.velocidade = new Random().nextInt(400, 600);
+        this.velocidade = new Random().nextInt(50, 60);
         this.gerenciadorSincronizacao = gerenciador;
     }
 
@@ -39,17 +39,11 @@ public class Veiculo extends Thread {
 
                 Point proximaPosicao = calcularProximaPosicaoFisica();
 
-                if (!isPontoValido(proximaPosicao)) {
-                    gerenciadorSincronizacao.liberar(this.posicao);
-                    break; 
-                }
-
                 int tipoProximo = malha.getValor(proximaPosicao.y, proximaPosicao.x);
 
-                // A decisão é tomada ANTES de se mover.
-                if (tipoProximo >= 5) { // Se a PRÓXIMA célula é um cruzamento
+                if (tipoProximo >= 5) {
                     atravessarCruzamento(proximaPosicao);
-                } else { // Se a PRÓXIMA célula é uma via normal
+                } else {
                     moverPara(proximaPosicao);
                 }
             }
@@ -73,7 +67,6 @@ public class Veiculo extends Thread {
         Thread.sleep(velocidade);
     }
 
-    // LÓGICA DE CRUZAMENTO CORRIGIDA E FINAL
     private void atravessarCruzamento(Point pontoEntrada) throws InterruptedException {
         // 1. Planeja o caminho completo, incluindo o ponto de entrada.
         List<Point> caminhoCompleto = planejarCaminhoCompleto(pontoEntrada);
@@ -83,28 +76,27 @@ public class Veiculo extends Thread {
             return;
         }
 
-        // 2. Tenta reservar o CAMINHO INTEIRO. Esta é a operação "tudo ou nada".
+        // 2. Tenta reservar o CAMINHO INTEIRO
         if (gerenciadorSincronizacao.tentarAdquirirCaminho(caminhoCompleto)) {
-            // 3. Se conseguiu, atravessa o caminho passo a passo.
+        	
             for (Point proximoPasso : caminhoCompleto) {
-                // A lógica de mover aqui é simplificada pois os locks já foram adquiridos.
                 Point posicaoAntiga = this.posicao;
                 this.posicao = proximoPasso;
                 painel.repaint();
                 
-                // Libera a posição anterior DEPOIS de se mover.
+                // Libera a posição anterior depois de se mover.
                 gerenciadorSincronizacao.liberar(posicaoAntiga);
                 Thread.sleep(velocidade);
             }
         } else {
-            // 4. Se falhou, o veículo NÃO SE MOVEU. Ele apenas espera para tentar de novo.
+            // 4. Se falhou, o veículo não se moveu. Ele apenas espera para tentar de novo.
             Thread.sleep(velocidade);
         }
     }
     
     private List<Point> planejarCaminhoCompleto(Point pontoEntrada) {
         List<Point> caminho = new ArrayList<>();
-        caminho.add(pontoEntrada); // O primeiro passo é entrar no cruzamento.
+        caminho.add(pontoEntrada);
         
         Point pontoAtual = pontoEntrada;
         Point pontoAnterior = this.posicao;
@@ -127,7 +119,7 @@ public class Veiculo extends Thread {
         Collections.shuffle(direcoes);
         for (int direcao : direcoes) {
             Point proximo = calcularProximoPonto(pontoAtual, direcao);
-            if (isPontoValido(proximo) && !proximo.equals(pontoAnterior) && !caminhoJaConstruido.contains(proximo) && malha.getValor(proximo.y, proximo.x) > 0) {
+            if (isPontoValido(proximo) && !caminhoJaConstruido.contains(proximo) && malha.getValor(proximo.y, proximo.x) > 0) {
                 return proximo;
             }
         }
@@ -141,10 +133,10 @@ public class Veiculo extends Thread {
     
     private List<Integer> obterDirecoesDeSaida(int tipoCruzamento) {
         List<Integer> direcoes = new ArrayList<>();
-        if (tipoCruzamento == 5 || tipoCruzamento == 9 || tipoCruzamento == 10) direcoes.add(1);
-        if (tipoCruzamento == 6 || tipoCruzamento == 9 || tipoCruzamento == 11) direcoes.add(2);
-        if (tipoCruzamento == 7 || tipoCruzamento == 11 || tipoCruzamento == 12) direcoes.add(3);
-        if (tipoCruzamento == 8 || tipoCruzamento == 10 || tipoCruzamento == 12) direcoes.add(4);
+        if (tipoCruzamento == 5 || tipoCruzamento == 9 || tipoCruzamento == 10) direcoes.add(1); //cima
+        if (tipoCruzamento == 6 || tipoCruzamento == 9 || tipoCruzamento == 11) direcoes.add(2); //direita
+        if (tipoCruzamento == 7 || tipoCruzamento == 11 || tipoCruzamento == 12) direcoes.add(3); //baixo
+        if (tipoCruzamento == 8 || tipoCruzamento == 10 || tipoCruzamento == 12) direcoes.add(4); //esquerda
         return direcoes;
     }
 

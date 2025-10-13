@@ -1,12 +1,12 @@
 package view;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.util.List;
 import javax.swing.JPanel;
 import model.Malha;
@@ -19,8 +19,7 @@ public class PainelMalha extends JPanel {
     private List<Veiculo> veiculos;
 
     public PainelMalha() {
-        setPreferredSize(new Dimension(800, 800));
-        setBackground(Color.DARK_GRAY);
+        setBackground(Color.GRAY);
     }
 
     public void setMalha(Malha malha) {
@@ -39,42 +38,119 @@ public class PainelMalha extends JPanel {
             return;
 
         Graphics2D g2d = (Graphics2D) g;
-        int tamanhoCelula = Math.min(getWidth() / malha.getColunas(), getHeight() / malha.getLinhas());
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        desenharMalha(g2d, tamanhoCelula);
-        desenharPontos(g2d, tamanhoCelula);
+        int tamanhoCelula = Math.min(getWidth() / malha.getColunas(), getHeight() / malha.getLinhas());
+        int totalGridWidth = tamanhoCelula * malha.getColunas();
+        int totalGridHeight = tamanhoCelula * malha.getLinhas();
+        int offsetX = (getWidth() - totalGridWidth) / 2;
+        int offsetY = (getHeight() - totalGridHeight) / 2;
+
+        desenharMalha(g2d, tamanhoCelula, offsetX, offsetY);
+        desenharPontos(g2d, tamanhoCelula, offsetX, offsetY);
 
         if (veiculos != null) {
-            desenharVeiculos(g2d, tamanhoCelula);
+            desenharVeiculos(g2d, tamanhoCelula, offsetX, offsetY);
         }
     }
 
-    private void desenharMalha(Graphics2D g2d, int tamanhoCelula) {
+    private void desenharMalha(Graphics2D g2d, int tamanhoCelula, int offsetX, int offsetY) {
         for (int i = 0; i < malha.getLinhas(); i++) {
             for (int j = 0; j < malha.getColunas(); j++) {
-                g2d.setColor(getColorForSegmento(malha.getValor(i, j)));
-                g2d.fillRect(j * tamanhoCelula, i * tamanhoCelula, tamanhoCelula, tamanhoCelula);
+                int x = offsetX + j * tamanhoCelula;
+                int y = offsetY + i * tamanhoCelula;
+                int tipoSegmento = malha.getValor(i, j);
+
+                // 1. Desenha a cor de fundo da célula
+                g2d.setColor(getColorForSegmento(tipoSegmento));
+                g2d.fillRect(x, y, tamanhoCelula, tamanhoCelula);
+
                 g2d.setColor(Color.BLACK);
-                g2d.drawRect(j * tamanhoCelula, i * tamanhoCelula, tamanhoCelula, tamanhoCelula);
+                switch (tipoSegmento) {
+                    case 1: // Estrada Cima
+                        desenharSetaCima(g2d, x, y, tamanhoCelula);
+                        break;
+                    case 2: // Estrada Direita
+                        desenharSetaDireita(g2d, x, y, tamanhoCelula);
+                        break;
+                    case 3: // Estrada Baixo
+                        desenharSetaBaixo(g2d, x, y, tamanhoCelula);
+                        break;
+                    case 4: // Estrada Esquerda
+                        desenharSetaEsquerda(g2d, x, y, tamanhoCelula);
+                        break;
+                    // Cruzamentos (5-12) e células vazias (0) não terão setas.
+                }
+
+                // 3. Desenha a borda da célula
+                g2d.setColor(Color.BLACK);
+                g2d.drawRect(x, y, tamanhoCelula, tamanhoCelula);
             }
         }
     }
 
-    private void desenharPontos(Graphics2D g2d, int tamanhoCelula) {
+    private void desenharSetaCima(Graphics2D g2d, int x, int y, int s) {
+        int centerX = x + s / 2;
+        int margin = s / 3; 
+        int headSize = s / 8; 
+
+        // Corpo da seta
+        g2d.drawLine(centerX, y + s - margin, centerX, y + margin);
+        
+        // Ponta da seta
+        g2d.drawLine(centerX, y + margin, centerX - headSize, y + margin + headSize);
+        g2d.drawLine(centerX, y + margin, centerX + headSize, y + margin + headSize);
+    }
+
+    private void desenharSetaBaixo(Graphics2D g2d, int x, int y, int s) {
+        int centerX = x + s / 2;
+        int margin = s / 3; 
+        int headSize = s / 8; 
+
+        g2d.drawLine(centerX, y + margin, centerX, y + s - margin);
+        
+        g2d.drawLine(centerX, y + s - margin, centerX - headSize, y + s - margin - headSize);
+        g2d.drawLine(centerX, y + s - margin, centerX + headSize, y + s - margin - headSize);
+    }
+
+    private void desenharSetaEsquerda(Graphics2D g2d, int x, int y, int s) {
+        int centerY = y + s / 2;
+        int margin = s / 3; 
+        int headSize = s / 8; 
+
+        g2d.drawLine(x + s - margin, centerY, x + margin, centerY);
+
+        // Ponta da seta
+        g2d.drawLine(x + margin, centerY, x + margin + headSize, centerY - headSize);
+        g2d.drawLine(x + margin, centerY, x + margin + headSize, centerY + headSize);
+    }
+
+    private void desenharSetaDireita(Graphics2D g2d, int x, int y, int s) {
+        int centerY = y + s / 2;
+        int margin = s / 3; 
+        int headSize = s / 8; 
+
+        g2d.drawLine(x + margin, centerY, x + s - margin, centerY);
+        
+        g2d.drawLine(x + s - margin, centerY, x + s - margin - headSize, centerY - headSize);
+        g2d.drawLine(x + s - margin, centerY, x + s - margin - headSize, centerY + headSize);
+    }
+
+    private void desenharPontos(Graphics2D g2d, int tamanhoCelula, int offsetX, int offsetY) {
         g2d.setColor(new Color(0, 255, 0, 150));
         for (Point p : malha.getPontosDeEntrada()) {
-            g2d.fillOval(p.x * tamanhoCelula + tamanhoCelula / 4, p.y * tamanhoCelula + tamanhoCelula / 4,
+            g2d.fillOval(offsetX + p.x * tamanhoCelula + tamanhoCelula / 4, offsetY + p.y * tamanhoCelula + tamanhoCelula / 4,
                     tamanhoCelula / 2, tamanhoCelula / 2);
         }
 
         g2d.setColor(new Color(255, 0, 0, 150));
         for (Point p : malha.getPontosDeSaida()) {
-            g2d.fillOval(p.x * tamanhoCelula + tamanhoCelula / 4, p.y * tamanhoCelula + tamanhoCelula / 4,
+            g2d.fillOval(offsetX + p.x * tamanhoCelula + tamanhoCelula / 4, offsetY + p.y * tamanhoCelula + tamanhoCelula / 4,
                     tamanhoCelula / 2, tamanhoCelula / 2);
         }
     }
 
-    private void desenharVeiculos(Graphics2D g2d, int tamanhoCelula) {
+    private void desenharVeiculos(Graphics2D g2d, int tamanhoCelula, int offsetX, int offsetY) {
         synchronized (veiculos) {
             Font idFont = new Font("Arial", Font.BOLD, Math.max(8, tamanhoCelula / 3));
             g2d.setFont(idFont);
@@ -82,8 +158,8 @@ public class PainelMalha extends JPanel {
 
             for (Veiculo v : veiculos) {
                 Point p = v.getPosicao();
-                int xBase = p.x * tamanhoCelula;
-                int yBase = p.y * tamanhoCelula;
+                int xBase = offsetX + p.x * tamanhoCelula;
+                int yBase = offsetY + p.y * tamanhoCelula;
 
                 g2d.setColor(Color.BLUE);
                 g2d.fillRoundRect(xBase + 2, yBase + 2, tamanhoCelula - 4, tamanhoCelula - 4, 5, 5);
