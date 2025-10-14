@@ -1,0 +1,266 @@
+@startuml
+' Título do Diagrama
+title Diagrama de Classes Detalhado - Simulador de Tráfego
+
+' --- Configurações de Aparência para Máxima Clareza ---
+skinparam {
+    ' Estilo geral
+    packageStyle rectangle
+    classAttributeIconSize 0
+    ' linetype polyline, linetype ortho, splines ortho'
+    linetype ortho 
+    shadowing false
+
+    ' Aumenta drasticamente o espaçamento para evitar qualquer sobreposição
+    Nodesep 80
+    Ranksep 100
+
+    ' Adiciona preenchimento (padding) dentro dos pacotes e classes
+    Padding 1
+
+    ' Força uma margem ao redor de cada classe/elemento individual
+    ClassAttributeFontColor #000000
+    ClassAttributeFontSize 15
+    RoundCorner 15
+
+    ' Estilos de componentes para fácil identificação
+    class {
+        BackgroundColor LightBlue
+        ArrowColor Olive
+        BorderColor Olive
+        FontName Segoe UI
+        FontSize 12
+    }
+    interface {
+        BackgroundColor LightSkyBlue
+        ArrowColor RoyalBlue
+        BorderColor RoyalBlue
+        FontName Segoe UI
+        FontSize 12
+    }
+    enum {
+        BackgroundColor LightSalmon
+        BorderColor FireBrick
+    }
+    package {
+        FontName Segoe UI
+        FontSize 14
+        BorderColor Gray
+    }
+    note {
+        BackgroundColor LemonChiffon
+        BorderColor Orange
+        FontName Segoe UI Light
+        FontSize 11
+    }
+}
+
+' --- Pacote de Ponto de Entrada (Main) ---
+package "Ponto de Entrada" as Main {
+  class Simulador {
+    + {static} main(String[] args)
+  }
+}
+
+' --- Pacote Controlador ---
+package "Controller)" as Controller {
+  class SimuladorController implements Runnable {
+    - janela: JanelaPrincipal
+    - painelControle: PainelControle
+    - painelMalha: PainelMalha
+    - malha: Malha
+    - veiculos: List<Veiculo>
+    - threadGerenciadora: Thread
+    - simulacaoAtiva: boolean
+    - podeInserirVeiculos: boolean
+    - gerenciadorSincronizacao: GerenciadorSincronizacao
+    + SimuladorController()
+    - iniciarGUI()
+    - carregarMalha(): boolean
+    - conectarEventos()
+    - iniciarSimulacao()
+    - encerrarInsercao()
+    - encerrarSimulacao()
+    + run()
+  }
+}
+
+' --- Pacote Visão (View) ---
+package "Visão (View)" as View {
+  class JanelaPrincipal extends JFrame {
+    - painelMalha: PainelMalha
+    - painelControle: PainelControle
+    + JanelaPrincipal()
+    + getPainelMalha(): PainelMalha
+    + getPainelControle(): PainelControle
+  }
+
+  class PainelMalha extends JPanel {
+    - malha: Malha
+    - veiculos: List<Veiculo>
+    + PainelMalha()
+    + setMalha(Malha malha)
+    + setVeiculos(List<Veiculo> veiculos)
+    # paintComponent(Graphics g)
+    - desenharMalha(Graphics2D, int, int, int)
+    - desenharPontos(Graphics2D, int, int, int)
+    - desenharVeiculos(Graphics2D, int, int, int)
+  }
+
+  class PainelControle extends JPanel {
+    - txtQtdVeiculos: JTextField
+    - txtIntervalo: JTextField
+    - rbSemaforo: JRadioButton
+    - rbMonitor: JRadioButton
+    - btnIniciar: JButton
+    - btnEncerrarInsercao: JButton
+    - btnEncerrarSimulacao: JButton
+    + PainelControle()
+    + getQtdVeiculos(): String
+    + getIntervalo(): String
+    + isSemaforoSelecionado(): boolean
+    + getBtnIniciar(): JButton
+    + getBtnEncerrarInsercao(): JButton
+    + getBtnEncerrarSimulacao(): JButton
+  }
+}
+
+' --- Pacote Modelo (Model) ---
+package "Modelo (Model)" as Model {
+    class Malha {
+        - grid: int[][]
+        - pontosDeEntrada: List<Point>
+        - pontosDeSaida: List<Point>
+        - monitoresDaMalha: Map<Point, Object>
+        - semaforosDaMalha: Map<Point, Semaphore>
+        + Malha(int[][], List, List, Map, Map)
+        + getsemaforosDaMalha(): Map
+        + getLinhas(): int
+        + getColunas(): int
+        + getValor(int, int): int
+        + getPontosDeEntrada(): List
+        + getPontosDeSaida(): List
+    }
+
+    class Veiculo extends Thread {
+        - {static} contadorId: int
+        - id: int
+        - posicao: Point
+        - velocidade: int
+        - malha: Malha
+        - painel: PainelMalha
+        - gerenciadorSincronizacao: GerenciadorSincronizacao
+        - caminhoReservado: List<Point>
+        + Veiculo(Point, Malha, PainelMalha, GerenciadorSincronizacao)
+        + run()
+        - moverPara(Point proximaPosicao)
+        - atravessarCruzamento(Point pontoEntrada)
+        - planejarCaminhoCompleto(Point): List<Point>
+        - calcularProximaPosicaoFisica(): Point
+        + getId(): long
+        + getPosicao(): Point
+    }
+
+
+    package "Sincronização" as Sincronizacao {
+        interface GerenciadorSincronizacao {
+            + {abstract} tentarAdquirir(Point p): boolean
+            + {abstract} liberar(Point p)
+            + {abstract} tentarAdquirirCaminho(List<Point> caminho): boolean
+            + {abstract} liberarCaminho(List<Point> caminho)
+        }
+
+        class GerenciadorSemaforo implements GerenciadorSincronizacao {
+            - semaforos: Map<Point, Semaphore>
+            + GerenciadorSemaforo(Malha malha)
+            + tentarAdquirir(Point p): boolean
+            + liberar(Point p)
+            + tentarAdquirirCaminho(List<Point> caminho): boolean
+            + liberarCaminho(List<Point> caminho)
+        }
+
+        class GerenciadorMonitor implements GerenciadorSincronizacao {
+            - posicoesOcupadas: Set<Point>
+            + tentarAdquirir(Point p): boolean
+            + liberar(Point p)
+            + tentarAdquirirCaminho(List<Point> caminho): boolean
+            + liberarCaminho(List<Point> caminho)
+        }
+    }
+}
+
+' --- Pacote de Utilitários ---
+package "Utilitários" as Util {
+  class LeitorMalha {
+    + {static} lerArquivo(String caminho): Malha
+    - {static} identificarPontos(int[][], int, int, List, List)
+  }
+}
+
+' --- Relacionamentos e Posicionamento (Layout Controlado) ---
+
+' Layout principal: Main -> Controller -> View (Esquerda) e Model (Direita)
+Main -down-> Controller : "Inicia"
+Controller -left-> View : "Gerencia e recebe eventos da"
+Controller -right-> Model : "Manipula o"
+
+' O Controller usa o LeitorMalha para instanciar a Malha
+Controller ..> Util : "Usa"
+Util ..> Model.Malha : "Cria"
+
+' Detalhes das Relações do Controller
+SimuladorController o--> View.JanelaPrincipal : "Cria e gerencia a"
+SimuladorController "1" o--> "*" Model.Veiculo : "Cria e gerencia"
+SimuladorController "1" o--> "1" Model.Malha : "Carrega e utiliza a"
+SimuladorController o--> Sincronizacao.GerenciadorSincronizacao : "Usa a estratégia de"
+
+' Relações internas da View (Composição)
+View.JanelaPrincipal "1" *-- "1" View.PainelMalha : "Contém"
+View.JanelaPrincipal "1" *-- "1" View.PainelControle : "Contém"
+
+' Relações do Model
+Model.Veiculo o--> Model.Malha : "Existe e se move na"
+Model.Veiculo ..> View.PainelMalha : "Solicita repintura"
+Model.Veiculo o--> Sincronizacao.GerenciadorSincronizacao : "É sincronizado por >"
+
+' Relações do Padrão Strategy (Sincronização)
+Sincronizacao.GerenciadorSincronizacao <|.. Sincronizacao.GerenciadorSemaforo
+Sincronizacao.GerenciadorSincronizacao <|.. Sincronizacao.GerenciadorMonitor
+Sincronizacao.GerenciadorSemaforo --> Model.Malha : "Acessa semáforos da"
+
+' --- Notas Explicativas ---
+note right of Controller
+  **Arquitetura MVC: O Controlador**
+  Componente central que atua como
+  intermediário entre o Modelo (lógica)
+  e a Visão (interface). Ele recebe
+  a entrada do usuário (via Visão) e
+  atualiza o Modelo.
+end note
+
+note top of View
+  **Arquitetura MVC: A Visão**
+  Responsável pela apresentação dos
+  dados ao usuário. Renderiza a malha,
+  os veículos e os controles da interface.
+  Notifica o Controlador sobre as ações do usuário.
+end note
+
+note right of Model
+  **Arquitetura MVC: O Modelo**
+  Contém os dados e a lógica de negócio
+  da aplicação. Representa o estado
+  da simulação (malha, posição dos veículos)
+  e não tem conhecimento direto da Visão.
+end note
+
+note bottom  of Sincronizacao
+  **Padrão de Projeto: Strategy**
+  A interface `GerenciadorSincronizacao`
+  define uma família de algoritmos
+  (Semáforo e Monitor). O `SimuladorController`
+  (contexto) pode selecionar qual algoritmo
+  utilizar em tempo de execução, permitindo
+  alternar o mecanismo de exclusão mútua.
+end note
+@enduml

@@ -18,13 +18,14 @@ public class Veiculo extends Thread {
     private final Malha malha;
     private final PainelMalha painel;
     private final GerenciadorSincronizacao gerenciadorSincronizacao;
+    private List<Point> caminhoReservado = null;
 
     public Veiculo(Point posicaoInicial, Malha malha, PainelMalha painel, GerenciadorSincronizacao gerenciador) {
         this.id = contadorId++;
         this.posicao = posicaoInicial;
         this.malha = malha;
         this.painel = painel;
-        this.velocidade = new Random().nextInt(50, 60);
+        this.velocidade = new Random().nextInt(5, 6);
         this.gerenciadorSincronizacao = gerenciador;
     }
 
@@ -48,7 +49,15 @@ public class Veiculo extends Thread {
                 }
             }
         } catch (InterruptedException e) {
-            gerenciadorSincronizacao.liberar(this.posicao);
+            if (this.caminhoReservado != null) {
+                // Se o veículo foi interrompido durante um cruzamento, libera o caminho inteiro
+                System.out.println("Veículo #" + id + " interrompido no cruzamento, liberando caminho...");
+                gerenciadorSincronizacao.liberarCaminho(this.caminhoReservado);
+            } else {
+                // Se estava em via normal, libera apenas sua posição atual
+                System.out.println("Veículo #" + id + " interrompido, liberando semáforo em " + posicao);
+                gerenciadorSincronizacao.liberar(this.posicao);
+            }
             Thread.currentThread().interrupt();
         }
     }
@@ -78,6 +87,7 @@ public class Veiculo extends Thread {
 
         // 2. Tenta reservar o CAMINHO INTEIRO
         if (gerenciadorSincronizacao.tentarAdquirirCaminho(caminhoCompleto)) {
+            this.caminhoReservado = caminhoCompleto;
         	
             for (Point proximoPasso : caminhoCompleto) {
                 Point posicaoAntiga = this.posicao;
@@ -88,6 +98,7 @@ public class Veiculo extends Thread {
                 gerenciadorSincronizacao.liberar(posicaoAntiga);
                 Thread.sleep(velocidade);
             }
+            this.caminhoReservado = null;
         } else {
             // 4. Se falhou, o veículo não se moveu. Ele apenas espera para tentar de novo.
             Thread.sleep(velocidade);
@@ -133,12 +144,22 @@ public class Veiculo extends Thread {
     
     private List<Integer> obterDirecoesDeSaida(int tipoCruzamento) {
         List<Integer> direcoes = new ArrayList<>();
-        if (tipoCruzamento == 5 || tipoCruzamento == 9 || tipoCruzamento == 10) direcoes.add(1); //cima
+        if (tipoCruzamento == 5 || tipoCruzamento == 9 || tipoCruzamento == 10) direcoes.add(1); //cima*
         if (tipoCruzamento == 6 || tipoCruzamento == 9 || tipoCruzamento == 11) direcoes.add(2); //direita
-        if (tipoCruzamento == 7 || tipoCruzamento == 11 || tipoCruzamento == 12) direcoes.add(3); //baixo
+        if (tipoCruzamento == 7 || tipoCruzamento == 11 || tipoCruzamento == 12) direcoes.add(3); //baixo*
         if (tipoCruzamento == 8 || tipoCruzamento == 10 || tipoCruzamento == 12) direcoes.add(4); //esquerda
         return direcoes;
     }
+    
+    /* PARA TESTE DE BLOQUEIO DOS VEÍCULOS*/
+//    private List<Integer> obterDirecoesDeSaida(int tipoCruzamento) {
+//    	List<Integer> direcoes = new ArrayList<>();
+//    	if (tipoCruzamento == 10) direcoes.add(1); //cima
+//    	if (tipoCruzamento == 9) direcoes.add(2); //direita
+//    	if (tipoCruzamento == 11) direcoes.add(3); //baixo
+//    	if (tipoCruzamento == 12) direcoes.add(4); //esquerda
+//    	return direcoes;
+//    }
 
     private Point calcularProximoPonto(Point origem, int direcao) {
         if (origem == null) return null;

@@ -10,24 +10,24 @@ public class Malha {
     private final int[][] grid;
     private final List<Point> pontosDeEntrada;
     private final List<Point> pontosDeSaida;
-    private final Map<Point, Object> monitoresCruzamentos;
-    private final Map<Point, Semaphore> semaforosCruzamentos;
+    private final Map<Point, Object> monitoresDaMalha;
+    private final Map<Point, Semaphore> semaforosDaMalha;
     
     public Malha(int[][] grid, List<Point> pontosDeEntrada, List<Point> pontosDeSaida, 
-                 Map<Point, Object> monitoresCruzamentos, Map<Point, Semaphore> semaforosCruzamentos) {
+                 Map<Point, Object> monitoresDaMalha, Map<Point, Semaphore> semaforosDaMalha ) {
         this.grid = grid;
         this.pontosDeEntrada = pontosDeEntrada;
         this.pontosDeSaida = pontosDeSaida;
-        this.monitoresCruzamentos = monitoresCruzamentos;
-        this.semaforosCruzamentos = semaforosCruzamentos;
+        this.monitoresDaMalha = monitoresDaMalha;
+        this.semaforosDaMalha = semaforosDaMalha ;
     }
 
     public Map<Point, Semaphore> getSemaforosCruzamentos() {
-        return this.semaforosCruzamentos;
+        return this.semaforosDaMalha;
     }
 
     public Map<Point, Object> getMonitoresCruzamentos() {
-        return this.monitoresCruzamentos;
+        return this.monitoresDaMalha;
     }
 
     public int getLinhas() { 

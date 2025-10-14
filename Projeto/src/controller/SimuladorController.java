@@ -136,8 +136,14 @@ public class SimuladorController implements Runnable {
 
         while (simulacaoAtiva) {
             try {
-                veiculos.removeIf(v -> !v.isAlive());
 
+            	// Se o tamanho mudou (um carro saiu), força a tela a redesenhar.
+            	int tamanhoAntes = veiculos.size();
+                veiculos.removeIf(v -> !v.isAlive());
+                if (veiculos.size() < tamanhoAntes) {
+                    painelMalha.repaint();
+                }
+                
                 if (podeInserirVeiculos && veiculos.size() < Integer.parseInt(painelControle.getQtdVeiculos())) {
                     Collections.shuffle(pontosDeEntrada);
                     
