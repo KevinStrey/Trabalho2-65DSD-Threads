@@ -12,7 +12,7 @@ public class GerenciadorSemaforo implements GerenciadorSincronizacao {
     private final Map<Point, Semaphore> semaforos;
 
     public GerenciadorSemaforo(Malha malha) {
-        this.semaforos = malha.getSemaforosCruzamentos();
+        this.semaforos = malha.getSemaforosDaMalha();
     }
 
     @Override

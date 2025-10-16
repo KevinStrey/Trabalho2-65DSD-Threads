@@ -20,7 +20,6 @@ public class LeitorMalha {
             int[][] grid = new int[linhas][colunas];
 
             Map<Point, Semaphore> semaforos = new HashMap<>();
-            Map<Point, Object> monitores = new HashMap<>();
 
             for (int i = 0; i < linhas; i++) {
                 String[] valores = reader.readLine().trim().split("\\s+");
@@ -34,7 +33,6 @@ public class LeitorMalha {
                         Point p = new Point(j, i);
                         // Cria um semáforo binário e justo (fair)
                         semaforos.put(p, new Semaphore(1, true));
-                        monitores.put(p, new Object());
                     }
                 }
             }
@@ -43,7 +41,7 @@ public class LeitorMalha {
             List<Point> saidas = new ArrayList<>();
             identificarPontos(grid, linhas, colunas, entradas, saidas);
             
-            return new Malha(grid, entradas, saidas, monitores, semaforos);
+            return new Malha(grid, entradas, saidas, semaforos);
 
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();

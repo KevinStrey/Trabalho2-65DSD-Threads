@@ -25,7 +25,7 @@ public class Veiculo extends Thread {
         this.posicao = posicaoInicial;
         this.malha = malha;
         this.painel = painel;
-        this.velocidade = new Random().nextInt(5, 6);
+        this.velocidade = new Random().nextInt(500, 600);
         this.gerenciadorSincronizacao = gerenciador;
     }
 
@@ -43,7 +43,7 @@ public class Veiculo extends Thread {
                 int tipoProximo = malha.getValor(proximaPosicao.y, proximaPosicao.x);
 
                 if (tipoProximo >= 5) {
-                    atravessarCruzamento(proximaPosicao);
+                    atravessarCruzamento(proximaPosicao); //breakpoint
                 } else {
                     moverPara(proximaPosicao);
                 }

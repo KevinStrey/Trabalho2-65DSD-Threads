@@ -7,23 +7,19 @@ skinparam {
     ' Estilo geral
     packageStyle rectangle
     classAttributeIconSize 0
-    ' linetype polyline, linetype ortho, splines ortho'
     linetype ortho 
     shadowing false
 
-    ' Aumenta drasticamente o espaçamento para evitar qualquer sobreposição
+    ' Espaçamento
     Nodesep 80
-    Ranksep 100
-
-    ' Adiciona preenchimento (padding) dentro dos pacotes e classes
+    Ranksep 50
     Padding 1
 
-    ' Força uma margem ao redor de cada classe/elemento individual
+    ' Estilos de componentes
     ClassAttributeFontColor #000000
     ClassAttributeFontSize 15
     RoundCorner 15
 
-    ' Estilos de componentes para fácil identificação
     class {
         BackgroundColor LightBlue
         ArrowColor Olive
@@ -37,10 +33,6 @@ skinparam {
         BorderColor RoyalBlue
         FontName Segoe UI
         FontSize 12
-    }
-    enum {
-        BackgroundColor LightSalmon
-        BorderColor FireBrick
     }
     package {
         FontName Segoe UI
@@ -131,7 +123,6 @@ package "Modelo (Model)" as Model {
         - grid: int[][]
         - pontosDeEntrada: List<Point>
         - pontosDeSaida: List<Point>
-        - monitoresDaMalha: Map<Point, Object>
         - semaforosDaMalha: Map<Point, Semaphore>
         + Malha(int[][], List, List, Map, Map)
         + getsemaforosDaMalha(): Map
@@ -212,7 +203,8 @@ Util ..> Model.Malha : "Cria"
 SimuladorController o--> View.JanelaPrincipal : "Cria e gerencia a"
 SimuladorController "1" o--> "*" Model.Veiculo : "Cria e gerencia"
 SimuladorController "1" o--> "1" Model.Malha : "Carrega e utiliza a"
-SimuladorController o--> Sincronizacao.GerenciadorSincronizacao : "Usa a estratégia de"
+' CORRIGIDO AQUI: Usando o caminho completo "Model.Sincronizacao"
+SimuladorController o--> Model.Sincronizacao.GerenciadorSincronizacao : "Usa a estratégia de"
 
 ' Relações internas da View (Composição)
 View.JanelaPrincipal "1" *-- "1" View.PainelMalha : "Contém"
@@ -221,15 +213,16 @@ View.JanelaPrincipal "1" *-- "1" View.PainelControle : "Contém"
 ' Relações do Model
 Model.Veiculo o--> Model.Malha : "Existe e se move na"
 Model.Veiculo ..> View.PainelMalha : "Solicita repintura"
-Model.Veiculo o--> Sincronizacao.GerenciadorSincronizacao : "É sincronizado por >"
+' CORRIGIDO AQUI: Usando o caminho completo "Model.Sincronizacao"
+Model.Veiculo o-right-> Model.Sincronizacao.GerenciadorSincronizacao : "É sincronizado por"
 
 ' Relações do Padrão Strategy (Sincronização)
-Sincronizacao.GerenciadorSincronizacao <|.. Sincronizacao.GerenciadorSemaforo
-Sincronizacao.GerenciadorSincronizacao <|.. Sincronizacao.GerenciadorMonitor
-Sincronizacao.GerenciadorSemaforo --> Model.Malha : "Acessa semáforos da"
+Model.Sincronizacao.GerenciadorSincronizacao <|.. Model.Sincronizacao.GerenciadorSemaforo
+Model.Sincronizacao.GerenciadorSincronizacao <|.. Model.Sincronizacao.GerenciadorMonitor
+Model.Sincronizacao.GerenciadorSemaforo --> Model.Malha : "Acessa semáforos da"
 
 ' --- Notas Explicativas ---
-note right of Controller
+note top of Controller
   **Arquitetura MVC: O Controlador**
   Componente central que atua como
   intermediário entre o Modelo (lógica)
@@ -254,7 +247,7 @@ note right of Model
   e não tem conhecimento direto da Visão.
 end note
 
-note bottom  of Sincronizacao
+note bottom of Model.Sincronizacao
   **Padrão de Projeto: Strategy**
   A interface `GerenciadorSincronizacao`
   define uma família de algoritmos
