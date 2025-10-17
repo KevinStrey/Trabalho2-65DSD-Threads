@@ -8,6 +8,7 @@ import java.util.Set;
 public class GerenciadorMonitor implements GerenciadorSincronizacao {
 
     private final Set<Point> posicoesOcupadas = new HashSet<>();
+    
 
     @Override
     public boolean tentarAdquirir(Point p) {
@@ -48,4 +49,12 @@ public class GerenciadorMonitor implements GerenciadorSincronizacao {
             posicoesOcupadas.removeAll(caminho);
         }
     }
+
+	@Override
+	public void adquirir(Point proximaPosicao) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	
 }

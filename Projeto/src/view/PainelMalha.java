@@ -47,14 +47,24 @@ public class PainelMalha extends JPanel {
         int offsetY = (getHeight() - totalGridHeight) / 2;
 
         desenharMalha(g2d, tamanhoCelula, offsetX, offsetY);
-        desenharPontos(g2d, tamanhoCelula, offsetX, offsetY);
-
-        if (veiculos != null) {
-            desenharVeiculos(g2d, tamanhoCelula, offsetX, offsetY);
+        
+        // Apenas desenha pontos e veículos se as células forem minimamente visíveis
+        if (tamanhoCelula >= 5) {
+            desenharPontos(g2d, tamanhoCelula, offsetX, offsetY);
+            if (veiculos != null) {
+                desenharVeiculos(g2d, tamanhoCelula, offsetX, offsetY);
+            }
         }
     }
 
     private void desenharMalha(Graphics2D g2d, int tamanhoCelula, int offsetX, int offsetY) {
+        // Se as células forem muito pequenas, não desenha os detalhes para evitar poluição visual.
+        if (tamanhoCelula < 5) {
+            g2d.setColor(new Color(80, 80, 80));
+            g2d.fillRect(offsetX, offsetY, malha.getColunas() * tamanhoCelula, malha.getLinhas() * tamanhoCelula);
+            return; // Pula o resto do desenho detalhado
+        }
+        
         for (int i = 0; i < malha.getLinhas(); i++) {
             for (int j = 0; j < malha.getColunas(); j++) {
                 int x = offsetX + j * tamanhoCelula;
@@ -89,6 +99,9 @@ public class PainelMalha extends JPanel {
         }
     }
 
+    // ... (O resto dos métodos de PainelMalha.java permanece inalterado) ...
+    
+    // <Cole o resto dos seus métodos de desenho de setas, pontos e veículos aqui>
     private void desenharSetaCima(Graphics2D g2d, int x, int y, int s) {
         int centerX = x + s / 2;
         int margin = s / 3; 

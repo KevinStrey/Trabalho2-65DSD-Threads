@@ -41,9 +41,11 @@ public class JanelaPrincipal extends JFrame {
 		// 3. Organiza os componentes com base nos seus tamanhos preferidos
 		pack();
 
-		// 4. Define o tamanho mínimo da janela como o tamanho "empacotado".
-		// Isso impede que o usuário encolha a janela a um ponto inutilizável.
-		setMinimumSize(getSize());
+		// 4. (ALTERADO) Define um tamanho mínimo fixo e razoável.
+		// Isso impede que o usuário encolha a janela a um ponto inutilizável,
+		// mas permite que ela seja menor que o tamanho inicial.
+		// O valor 600 acomoda o painel de controle (~320px) e deixa espaço para a malha.
+		setMinimumSize(new Dimension(600, 400));
 
 		// 5. Centraliza a janela na tela
 		setLocationRelativeTo(null);

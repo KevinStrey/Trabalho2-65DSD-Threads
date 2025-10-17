@@ -55,7 +55,7 @@ package "Ponto de Entrada" as Main {
 }
 
 ' --- Pacote Controlador ---
-package "Controller)" as Controller {
+package "Controller" as Controller {
   class SimuladorController implements Runnable {
     - janela: JanelaPrincipal
     - painelControle: PainelControle
