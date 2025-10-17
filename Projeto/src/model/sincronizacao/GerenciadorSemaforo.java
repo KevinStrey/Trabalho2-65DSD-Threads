@@ -14,15 +14,12 @@ public class GerenciadorSemaforo implements GerenciadorSincronizacao {
     public GerenciadorSemaforo(Malha malha) {
         this.semaforos = malha.getSemaforosDaMalha();
     }
-    
-    //criar método adquirir
 
     @Override
     public boolean tentarAdquirir(Point p) {
         Semaphore s = semaforos.get(p);
         return s == null || s.tryAcquire();
     }
-    
 
     @Override
     public void liberar(Point p) {
@@ -53,19 +50,23 @@ public class GerenciadorSemaforo implements GerenciadorSincronizacao {
 
     @Override
     public void liberarCaminho(List<Point> caminho) {
-         for (Point p : caminho) {
+        for (Point p : caminho) {
             liberar(p);
         }
     }
 
-	@Override
-	public void adquirir(Point p) throws InterruptedException {
-	    Semaphore s = semaforos.get(p);
-	    if (s != null) {
-	        // Adquire UMA (1) permissão e espera o tempo que for necessário.
-	        s.acquire(); 
-	    }
-	}
+    @Override
+    public void adquirir(Point p) throws InterruptedException {
+        Semaphore s = semaforos.get(p);
+        if (s != null) {
+            s.acquire();
+        }
+    }
 
-	
+    @Override
+    public boolean isOcupado(Point p) {
+        Semaphore s = semaforos.get(p);
+        // Retorna true se o semáforo existir e não tiver permissões disponíveis
+        return s != null && s.availablePermits() == 0;
+    }
 }

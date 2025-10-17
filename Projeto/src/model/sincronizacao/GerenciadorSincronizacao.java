@@ -14,4 +14,6 @@ public interface GerenciadorSincronizacao {
     void liberarCaminho(List<Point> caminho);
 
     void adquirir(Point proximaPosicao) throws InterruptedException;
+
+    boolean isOcupado(Point p);
 }

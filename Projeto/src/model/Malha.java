@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
 
 public class Malha {
 
@@ -11,24 +12,31 @@ public class Malha {
     private final List<Point> pontosDeEntrada;
     private final List<Point> pontosDeSaida;
     private final Map<Point, Semaphore> semaforosDaMalha;
-    
-    public Malha(int[][] grid, List<Point> pontosDeEntrada, List<Point> pontosDeSaida, Map<Point, Semaphore> semaforosDaMalha ) {
+    private final Map<Point, Lock> monitoresDaMalha;
+
+    public Malha(int[][] grid, List<Point> pontosDeEntrada, List<Point> pontosDeSaida,
+            Map<Point, Semaphore> semaforosDaMalha, Map<Point, Lock> monitoresDaMalha) {
         this.grid = grid;
         this.pontosDeEntrada = pontosDeEntrada;
         this.pontosDeSaida = pontosDeSaida;
-        this.semaforosDaMalha = semaforosDaMalha ;
+        this.semaforosDaMalha = semaforosDaMalha;
+        this.monitoresDaMalha = monitoresDaMalha;
     }
 
     public Map<Point, Semaphore> getSemaforosDaMalha() {
         return this.semaforosDaMalha;
     }
 
-    public int getLinhas() { 
-        return grid.length; 
+    public Map<Point, Lock> getMonitoresDaMalha() {
+        return this.monitoresDaMalha;
     }
 
-    public int getColunas() { 
-        return grid[0].length; 
+    public int getLinhas() {
+        return grid.length;
+    }
+
+    public int getColunas() {
+        return grid[0].length;
     }
 
     public int getValor(int linha, int coluna) {
@@ -37,12 +45,12 @@ public class Malha {
         }
         return 0; // Retorna 0 se estiver fora dos limites (considerado "Nada")
     }
-    
-    public List<Point> getPontosDeEntrada() { 
-        return pontosDeEntrada; 
+
+    public List<Point> getPontosDeEntrada() {
+        return pontosDeEntrada;
     }
 
-    public List<Point> getPontosDeSaida() { 
-        return pontosDeSaida; 
+    public List<Point> getPontosDeSaida() {
+        return pontosDeSaida;
     }
 }

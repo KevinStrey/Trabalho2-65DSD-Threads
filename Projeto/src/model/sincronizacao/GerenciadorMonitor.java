@@ -1,60 +1,89 @@
 package model.sincronizacao;
 
 import java.awt.Point;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import model.Malha;
 
 public class GerenciadorMonitor implements GerenciadorSincronizacao {
 
-    private final Set<Point> posicoesOcupadas = new HashSet<>();
-    
+    private final Map<Point, Lock> monitores;
+
+    public GerenciadorMonitor(Malha malha) {
+        this.monitores = malha.getMonitoresDaMalha();
+    }
 
     @Override
-    public boolean tentarAdquirir(Point p) {
-        synchronized (this) {
-            if (posicoesOcupadas.contains(p)) {
-                return false;
-            }
-            posicoesOcupadas.add(p);
-            return true;
+    public void adquirir(Point p) throws InterruptedException {
+        Lock m = monitores.get(p);
+        if (m != null) {
+            m.lockInterruptibly();
         }
     }
 
     @Override
+    public boolean tentarAdquirir(Point p) {
+        Lock m = monitores.get(p);
+        if (m == null)
+            return true;
+
+        // long threadId = Thread.currentThread().getId();
+        boolean sucesso = false;
+        try {
+            // Tenta adquirir por um tempo muito curto para não bloquear a simulação
+            sucesso = m.tryLock(5, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return sucesso;
+    }
+
+    @Override
     public void liberar(Point p) {
-        synchronized (this) {
-            posicoesOcupadas.remove(p);
+        Lock m = monitores.get(p);
+        if (m != null) {
+            m.unlock();
         }
     }
 
     @Override
     public boolean tentarAdquirirCaminho(List<Point> caminho) {
-        synchronized (this) {
-            for (Point p : caminho) {
-                if (posicoesOcupadas.contains(p)) {
+        List<Lock> locksAdquiridos = new ArrayList<>();
+        for (Point p : caminho) {
+            Lock m = monitores.get(p);
+            if (m != null) {
+                if (tentarAdquirir(p)) { // Reutiliza o método com log
+                    locksAdquiridos.add(m);
+                } else {
+                    // Se não conseguir adquirir um, libera todos que já adquiriu
+                    for (Lock adquirido : locksAdquiridos) {
+                        adquirido.unlock();
+                    }
                     return false;
                 }
             }
-            for (Point p : caminho) {
-                posicoesOcupadas.add(p);
-            }
-            return true;
         }
+        return true;
     }
 
     @Override
     public void liberarCaminho(List<Point> caminho) {
-        synchronized (this) {
-            posicoesOcupadas.removeAll(caminho);
+        for (Point p : caminho) {
+            liberar(p); // Reutiliza o método com log
         }
     }
 
-	@Override
-	public void adquirir(Point proximaPosicao) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	
+    @Override
+    public boolean isOcupado(Point p) {
+        Lock lock = monitores.get(p);
+        if (lock instanceof ReentrantLock) {
+            return ((ReentrantLock) lock).isLocked();
+        }
+        return false;
+    }
 }
