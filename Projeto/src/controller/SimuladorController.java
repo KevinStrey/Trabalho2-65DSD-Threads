@@ -18,6 +18,7 @@ import view.PainelMalha;
 
 public class SimuladorController implements Runnable {
 
+    // ... (variáveis de instância permanecem as mesmas) ...
     private JanelaPrincipal janela;
     private PainelControle painelControle;
     private PainelMalha painelMalha;
@@ -41,6 +42,8 @@ public class SimuladorController implements Runnable {
         }
     }
 
+    // ... (métodos iniciarGUI, carregarMalha, conectarEventos permanecem os mesmos)
+    // ...
     private void iniciarGUI() {
         this.janela = new JanelaPrincipal();
         this.painelMalha = janela.getPainelMalha();
@@ -57,14 +60,15 @@ public class SimuladorController implements Runnable {
             String caminhoArquivo = fileChooser.getSelectedFile().getPath();
             this.malha = LeitorMalha.lerArquivo(caminhoArquivo);
             if (this.malha == null) {
-                JOptionPane.showMessageDialog(janela, "Erro ao ler o arquivo da malha.", "Erro de Arquivo", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(janela, "Erro ao ler o arquivo da malha.", "Erro de Arquivo",
+                        JOptionPane.ERROR_MESSAGE);
                 return false;
             }
             return true;
         }
         return false;
     }
-    
+
     private void conectarEventos() {
         painelControle.getBtnIniciar().addActionListener(e -> iniciarSimulacao());
         painelControle.getBtnEncerrarInsercao().addActionListener(e -> encerrarInsercao());
@@ -72,31 +76,34 @@ public class SimuladorController implements Runnable {
     }
 
     private void iniciarSimulacao() {
-        if (simulacaoAtiva) return;
+        if (simulacaoAtiva)
+            return;
 
         System.out.println("Iniciando a simulação...");
-        
+
         if (painelControle.isSemaforoSelecionado()) {
             System.out.println("Usando estratégia: SEMÁFORO");
             this.gerenciadorSincronizacao = new GerenciadorSemaforo(malha);
         } else {
             System.out.println("Usando estratégia: MONITOR");
-            this.gerenciadorSincronizacao = new GerenciadorMonitor();
+            this.gerenciadorSincronizacao = new GerenciadorMonitor(malha);
         }
 
         simulacaoAtiva = true;
         podeInserirVeiculos = true;
         painelControle.getBtnIniciar().setEnabled(false);
-        
+
         List<Point> pontosDeEntrada = new ArrayList<>(malha.getPontosDeEntrada());
         Collections.shuffle(pontosDeEntrada);
         int maxInitialCars = Math.min(pontosDeEntrada.size(), Integer.parseInt(painelControle.getQtdVeiculos()));
-        
+
         int carrosCriados = 0;
         for (Point pontoInicial : pontosDeEntrada) {
-            if (carrosCriados >= maxInitialCars) break;
+            if (carrosCriados >= maxInitialCars)
+                break;
 
-            if (this.gerenciadorSincronizacao.tentarAdquirir(pontoInicial)) {
+            // ALTERAÇÃO AQUI: Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
+            if (!this.gerenciadorSincronizacao.isOcupado(pontoInicial)) {
                 Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, this.gerenciadorSincronizacao);
                 veiculos.add(novoVeiculo);
                 novoVeiculo.start();
@@ -108,6 +115,7 @@ public class SimuladorController implements Runnable {
         threadGerenciadora.start();
     }
 
+    // ... (método encerrarInsercao e encerrarSimulacao permanecem os mesmos) ...
     private void encerrarInsercao() {
         System.out.println("Encerrando a inserção de novos veículos...");
         this.podeInserirVeiculos = false;
@@ -117,7 +125,7 @@ public class SimuladorController implements Runnable {
         System.out.println("Encerrando a simulação...");
         this.simulacaoAtiva = false;
         this.podeInserirVeiculos = false;
-        
+
         if (threadGerenciadora != null) {
             threadGerenciadora.interrupt();
         }
@@ -136,23 +144,21 @@ public class SimuladorController implements Runnable {
 
         while (simulacaoAtiva) {
             try {
-
-            	// Se o tamanho mudou (um carro saiu), força a tela a redesenhar.
-            	int tamanhoAntes = veiculos.size();
                 veiculos.removeIf(v -> !v.isAlive());
-                if (veiculos.size() < tamanhoAntes) {
-                    painelMalha.repaint();
-                }
-                
+                painelMalha.repaint();
+
                 if (podeInserirVeiculos && veiculos.size() < Integer.parseInt(painelControle.getQtdVeiculos())) {
                     Collections.shuffle(pontosDeEntrada);
-                    
+
                     for (Point p : pontosDeEntrada) {
-                        if (this.gerenciadorSincronizacao.tentarAdquirir(p)) {
+                        if (veiculos.size() >= Integer.parseInt(painelControle.getQtdVeiculos())) {
+                            break;
+                        }
+                        // ALTERAÇÃO AQUI: Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
+                        if (!this.gerenciadorSincronizacao.isOcupado(p)) {
                             Veiculo novoVeiculo = new Veiculo(p, malha, painelMalha, this.gerenciadorSincronizacao);
                             veiculos.add(novoVeiculo);
                             novoVeiculo.start();
-                            break;
                         }
                     }
                 }
@@ -164,7 +170,12 @@ public class SimuladorController implements Runnable {
                 break;
             } catch (Exception e) {
                 System.err.println("Erro no loop do gerenciador: " + e.getMessage());
-                try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                e.printStackTrace(); // Ajuda a debugar
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         System.out.println("Thread gerenciadora finalizada.");
