@@ -18,7 +18,6 @@ import view.PainelMalha;
 
 public class SimuladorController implements Runnable {
 
-    // ... (variáveis de instância permanecem as mesmas) ...
     private JanelaPrincipal janela;
     private PainelControle painelControle;
     private PainelMalha painelMalha;
@@ -42,8 +41,6 @@ public class SimuladorController implements Runnable {
         }
     }
 
-    // ... (métodos iniciarGUI, carregarMalha, conectarEventos permanecem os mesmos)
-    // ...
     private void iniciarGUI() {
         this.janela = new JanelaPrincipal();
         this.painelMalha = janela.getPainelMalha();
@@ -102,7 +99,7 @@ public class SimuladorController implements Runnable {
             if (carrosCriados >= maxInitialCars)
                 break;
 
-            // ALTERAÇÃO AQUI: Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
+            // Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
             if (!this.gerenciadorSincronizacao.isOcupado(pontoInicial)) {
                 Veiculo novoVeiculo = new Veiculo(pontoInicial, malha, painelMalha, this.gerenciadorSincronizacao);
                 veiculos.add(novoVeiculo);
@@ -115,7 +112,6 @@ public class SimuladorController implements Runnable {
         threadGerenciadora.start();
     }
 
-    // ... (método encerrarInsercao e encerrarSimulacao permanecem os mesmos) ...
     private void encerrarInsercao() {
         System.out.println("Encerrando a inserção de novos veículos...");
         this.podeInserirVeiculos = false;
@@ -154,7 +150,7 @@ public class SimuladorController implements Runnable {
                         if (veiculos.size() >= Integer.parseInt(painelControle.getQtdVeiculos())) {
                             break;
                         }
-                        // ALTERAÇÃO AQUI: Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
+                        //Verifica se o ponto está ocupado em vez de tentar adquiri-lo.
                         if (!this.gerenciadorSincronizacao.isOcupado(p)) {
                             Veiculo novoVeiculo = new Veiculo(p, malha, painelMalha, this.gerenciadorSincronizacao);
                             veiculos.add(novoVeiculo);

@@ -31,7 +31,6 @@ public class GerenciadorMonitor implements GerenciadorSincronizacao {
         if (m == null)
             return true;
 
-        // long threadId = Thread.currentThread().getId();
         boolean sucesso = false;
         try {
             // Tenta adquirir por um tempo muito curto para não bloquear a simulação

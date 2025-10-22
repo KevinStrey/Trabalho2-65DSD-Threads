@@ -23,7 +23,6 @@ public class Veiculo extends Thread {
 
 	public Veiculo(Point posicaoInicial, Malha malha, PainelMalha painel, GerenciadorSincronizacao gerenciador) {
 		this.id = contadorId++;
-		// Associa o nome da thread ao ID do veículo para logs mais claros
 		this.setName(String.valueOf(this.id));
 		this.posicao = posicaoInicial;
 		this.malha = malha;
@@ -41,21 +40,9 @@ public class Veiculo extends Thread {
 	@Override
 	public void run() {
 		try {
-			/*
-			 * System.out.println(String.
-			 * format("Veículo #%d INICIANDO. Tentando adquirir posição inicial %s",
-			 * getId(),
-			 * formatarPonto(this.posicao)));
-			 */
 			gerenciadorSincronizacao.adquirir(this.posicao);
-
 			while (!Thread.currentThread().isInterrupted()) {
 				if (malha.getPontosDeSaida().contains(posicao)) {
-					/*
-					 * System.out.println(
-					 * String.format("Veículo #%d CHEGOU AO FIM em %s.", getId(),
-					 * formatarPonto(posicao)));
-					 */
 					break;
 				}
 
@@ -68,10 +55,8 @@ public class Veiculo extends Thread {
 				int tipoProximo = malha.getValor(proximaPosicao.y, proximaPosicao.x);
 
 				if (tipoProximo >= 5) {
-
 					atravessarCruzamento(proximaPosicao);
 				} else {
-
 					moverPara(proximaPosicao);
 				}
 			}
@@ -91,7 +76,6 @@ public class Veiculo extends Thread {
 		Point posicaoAntiga = this.posicao;
 		this.posicao = proximaPosicao;
 		painel.repaint();
-
 		gerenciadorSincronizacao.liberar(posicaoAntiga);
 		Thread.sleep(velocidade);
 	}
@@ -180,20 +164,20 @@ public class Veiculo extends Thread {
 		int x = origem.x;
 		int y = origem.y;
 		switch (direcao) {
-			case 1:
-				y--;
-				break;
-			case 2:
-				x++;
-				break;
-			case 3:
-				y++;
-				break;
-			case 4:
-				x--;
-				break;
-			default:
-				return null;
+		case 1:
+			y--;
+			break;
+		case 2:
+			x++;
+			break;
+		case 3:
+			y++;
+			break;
+		case 4:
+			x--;
+			break;
+		default:
+			return null;
 		}
 		return new Point(x, y);
 	}

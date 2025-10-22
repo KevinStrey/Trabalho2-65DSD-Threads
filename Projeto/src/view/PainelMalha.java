@@ -99,9 +99,6 @@ public class PainelMalha extends JPanel {
         }
     }
 
-    // ... (O resto dos métodos de PainelMalha.java permanece inalterado) ...
-    
-    // <Cole o resto dos seus métodos de desenho de setas, pontos e veículos aqui>
     private void desenharSetaCima(Graphics2D g2d, int x, int y, int s) {
         int centerX = x + s / 2;
         int margin = s / 3; 

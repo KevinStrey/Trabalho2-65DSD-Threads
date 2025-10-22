@@ -1,0 +1,247 @@
+@startuml Diagrama 65-DSD
+' Título do Diagrama
+title Diagrama de Classes Detalhado - Simulador de Tráfego
+
+' --- Configurações de Aparência para Máxima Clareza ---
+
+skinparam {
+    ' Estilo geral
+    packageStyle rectangle
+    classAttributeIconSize 0
+    linetype ortho 
+    shadowing false
+
+    ' Espaçamento
+    Nodesep 150
+    Ranksep 100
+    Padding 2
+
+    ' Estilos de componentes
+    ClassAttributeFontColor #000000
+    ClassAttributeFontSize 15
+    RoundCorner 15
+
+    class {
+        BackgroundColor LightBlue
+        ArrowColor Olive
+        BorderColor Olive
+        FontName Segoe UI
+        FontSize 12
+    }
+    interface {
+        BackgroundColor LightSkyBlue
+        ArrowColor RoyalBlue
+        BorderColor RoyalBlue
+        FontName Segoe UI
+        FontSize 12
+    }
+    package {
+        FontName Segoe UI
+        FontSize 14
+        BorderColor Gray
+    }
+    note {
+        BackgroundColor LemonChiffon
+        BorderColor Orange
+        FontName Segoe UI Light
+        FontSize 11
+    }
+}
+
+' ===============================================
+' PACKAGE: main
+' ===============================================
+package main {
+  class Simulador {
+    + {static} main(String[] args)
+  }
+}
+
+' ===============================================
+' PACKAGE: controller
+' ===============================================
+package controller {
+  class SimuladorController implements Runnable {
+    - janela: JanelaPrincipal
+    - painelControle: PainelControle
+    - painelMalha: PainelMalha
+    - malha: Malha
+    - veiculos: List<Veiculo>
+    - threadGerenciadora: Thread
+    - {volatile} simulacaoAtiva: boolean
+    - {volatile} podeInserirVeiculos: boolean
+    - gerenciadorSincronizacao: GerenciadorSincronizacao
+    + SimuladorController()
+    - iniciarGUI()
+    - carregarMalha(): boolean
+    - conectarEventos()
+    - iniciarSimulacao()
+    - encerrarInsercao()
+    - encerrarSimulacao()
+    + run()
+  }
+}
+
+' ===============================================
+' PACKAGE: view
+' ===============================================
+package view {
+  class JanelaPrincipal extends JFrame {
+    - painelMalha: PainelMalha
+    - painelControle: PainelControle
+    + JanelaPrincipal()
+    + getPainelMalha(): PainelMalha
+    + getPainelControle(): PainelControle
+  }
+
+  class PainelControle {
+    - txtQtdVeiculos: JTextField
+    - txtIntervalo: JTextField
+    - rbSemaforo: JRadioButton
+    - rbMonitor: JRadioButton
+    - btnIniciar: JButton
+    - btnEncerrarInsercao: JButton
+    - btnEncerrarSimulacao: JButton
+    + getQtdVeiculos(): String
+    + getIntervalo(): String
+    + isSemaforoSelecionado(): boolean
+  }
+
+  class PainelMalha {
+    - malha: Malha
+    - veiculos: List<Veiculo>
+    + setMalha(Malha malha)
+    + setVeiculos(List<Veiculo> veiculos)
+    # paintComponent(Graphics g)
+    - desenharMalha(Graphics2D g2d, ...)
+    - desenharVeiculos(Graphics2D g2d, ...)
+  }
+}
+
+' ===============================================
+' PACKAGE: model
+' ===============================================
+package model {
+  class Veiculo {
+    - {static} contadorId: int
+    - id: int
+    - posicao: Point
+    - velocidade: int
+    - malha: Malha
+    - painel: PainelMalha
+    - gerenciadorSincronizacao: GerenciadorSincronizacao
+    - caminhoReservado: List<Point>
+    + Veiculo(Point, Malha, PainelMalha, GerenciadorSincronizacao)
+    + run()
+    - moverPara(Point proximaPosicao)
+    - atravessarCruzamento(Point pontoEntrada)
+    - planejarCaminhoCompleto(Point pontoEntrada): List<Point>
+  }
+
+  class Malha {
+    - grid: int[][]
+    - pontosDeEntrada: List<Point>
+    - pontosDeSaida: List<Point>
+    - semaforosDaMalha: Map<Point, Semaphore>
+    - monitoresDaMalha: Map<Point, Lock>
+    + Malha(...)
+    + getSemaforosDaMalha(): Map<Point, Semaphore>
+    + getMonitoresDaMalha(): Map<Point, Lock>
+    + getValor(int linha, int coluna): int
+  }
+}
+
+' ===============================================
+' PACKAGE: model.sincronizacao
+' ===============================================
+package model.sincronizacao {
+  interface GerenciadorSincronizacao {
+    + {abstract} tentarAdquirir(Point p): boolean
+    + {abstract} liberar(Point p)
+    + {abstract} tentarAdquirirCaminho(List<Point> caminho): boolean
+    + {abstract} liberarCaminho(List<Point> caminho)
+    + {abstract} adquirir(Point p)
+    + {abstract} isOcupado(Point p): boolean
+  }
+
+  class GerenciadorSemaforo implements GerenciadorSincronizacao {
+    - semaforos: Map<Point, Semaphore>
+    + GerenciadorSemaforo(Malha malha)
+    + tentarAdquirir(Point p): boolean
+    + liberar(Point p)
+  }
+
+  class GerenciadorMonitor implements GerenciadorSincronizacao {
+    - monitores: Map<Point, Lock>
+    + GerenciadorMonitor(Malha malha)
+    + tentarAdquirir(Point p): boolean
+    + liberar(Point p)
+  }
+}
+
+' ===============================================
+' PACKAGE: util
+' ===============================================
+package util {
+  class LeitorMalha {
+    + {static} lerArquivo(String caminhoArquivo): Malha
+    - {static} identificarPontos(...)
+  }
+}
+
+
+' ===============================================
+' RELACIONAMENTOS (AJUSTADOS PARA MELHOR LAYOUT)
+' ===============================================
+
+' Ponto de entrada da aplicação no topo.
+Simulador --> SimuladorController : "cria"
+
+' Agrupa componentes chave (Malha, Sincronização, Leitor) perto do Controller.
+' Link invisível para alinhar verticalmente os pacotes do modelo.
+
+' Relações do Controller para os componentes principais.
+SimuladorController .left.> LeitorMalha : "usa para criar"
+SimuladorController .[hidden]right.> LeitorMalha
+SimuladorController --> Malha : "gerencia"
+SimuladorController .left.> GerenciadorSincronizacao : "usa estratégia de"
+SimuladorController o--> Veiculo : "cria e gerencia"
+SimuladorController *-- JanelaPrincipal : "cria e gerencia"
+
+' Relações do Controller com o painel da view.
+SimuladorController o-- PainelControle : "usa"
+SimuladorController o-- PainelMalha : "usa"
+
+' Relações internas da View.
+JanelaPrincipal *-- PainelMalha
+JanelaPrincipal *-- PainelControle
+
+' Relações entre Model e View.
+PainelMalha o-- Malha : "desenha"
+PainelMalha o-- Veiculo : "desenha"
+Veiculo ..> PainelMalha : "solicita repaint"
+
+
+' Relações internas do Model.
+Veiculo -right-> Malha : "move-se em"
+Veiculo -up- GerenciadorSincronizacao : "usa para"
+
+' Relações da Sincronização com a Malha.
+GerenciadorSemaforo ..> Malha : "obtém semáforos"
+GerenciadorMonitor ..> Malha : "obtém monitores"
+'GerenciadorMonitor .[hidden].> GerenciadorSincronizacao
+
+
+view.JPanel <|-up- PainelControle
+view.JPanel <|-up- PainelMalha
+'controller.SimuladorController -left- util
+model.Thread <|-down- Veiculo
+
+' --- AQUI ESTÁ A SUGESTÃO PRINCIPAL ---
+' 1. Usamos um link INVISÍVEL para forçar LeitorMalha a ficar à direita do Controller.
+'    Isso cria a estrutura e o posicionamento desejado.
+
+' 2. Agora que a posição está garantida, desenhamos a relação de dependência VISÍVEL.
+'    A linha será curta e direta, sem bagunçar o resto do diagrama.
+' -----------------------------------------
+@enduml
