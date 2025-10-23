@@ -23,7 +23,6 @@ public class Veiculo extends Thread {
 
 	public Veiculo(Point posicaoInicial, Malha malha, PainelMalha painel, GerenciadorSincronizacao gerenciador) {
 		this.id = contadorId++;
-		// Associa o nome da thread ao ID do veículo para logs mais claros
 		this.setName(String.valueOf(this.id));
 		this.posicao = posicaoInicial;
 		this.malha = malha;
@@ -32,30 +31,13 @@ public class Veiculo extends Thread {
 		this.gerenciadorSincronizacao = gerenciador;
 	}
 
-	private String formatarPonto(Point p) {
-		if (p == null)
-			return "null";
-		return String.format("[%d,%d]", p.x, p.y);
-	}
-
 	@Override
 	public void run() {
 		try {
-			/*
-			 * System.out.println(String.
-			 * format("Veículo #%d INICIANDO. Tentando adquirir posição inicial %s",
-			 * getId(),
-			 * formatarPonto(this.posicao)));
-			 */
 			gerenciadorSincronizacao.adquirir(this.posicao);
 
 			while (!Thread.currentThread().isInterrupted()) {
 				if (malha.getPontosDeSaida().contains(posicao)) {
-					/*
-					 * System.out.println(
-					 * String.format("Veículo #%d CHEGOU AO FIM em %s.", getId(),
-					 * formatarPonto(posicao)));
-					 */
 					break;
 				}
 
