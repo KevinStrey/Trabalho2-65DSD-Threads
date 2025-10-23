@@ -166,7 +166,7 @@ public class SimuladorController implements Runnable {
                 break;
             } catch (Exception e) {
                 System.err.println("Erro no loop do gerenciador: " + e.getMessage());
-                e.printStackTrace(); // Ajuda a debugar
+                e.printStackTrace();
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ie) {

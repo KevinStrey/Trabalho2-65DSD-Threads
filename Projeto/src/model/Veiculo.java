@@ -31,12 +31,6 @@ public class Veiculo extends Thread {
 		this.gerenciadorSincronizacao = gerenciador;
 	}
 
-	private String formatarPonto(Point p) {
-		if (p == null)
-			return "null";
-		return String.format("[%d,%d]", p.x, p.y);
-	}
-
 	@Override
 	public void run() {
 		try {
